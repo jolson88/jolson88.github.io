@@ -9,7 +9,9 @@
   <meta name="author" content="Jason Olson">
 
   
-  <meta name="description" content="Archives Coding Coda A programming musician? Or a musical programmer? Home Archives About Feed Recent Posts GitHub Repos Status updating... @ &hellip;">
+  <meta name="description" content="In my recent talk at //Build (Sequencers, Synthesizers, and Software, Oh My!),
+I showed how WASAPI could be used to create low-latency audio apps
+for &hellip;">
   
 
   <!-- http://t.co/dKP3o1e -->
@@ -69,6 +71,388 @@
       <div class="blog-index">
   
   
+  
+    <article>
+      
+  <header>
+    
+      <h1 class="entry-title"><a href="/blog/2014/04/13/windows-store-apps/">Windows Store Apps, WASAPI, and Audio Code in C#</a></h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-13T22:10:34-07:00" pubdate data-updated="true"></time>
+        
+      </p>
+    
+  </header>
+
+
+  <div class="entry-content"><p>In my recent talk at //Build (<a href="https://channel9.msdn.com/Events/Build/2014/3-548">Sequencers, Synthesizers, and Software, Oh My!</a>),
+I showed how WASAPI could be used to create low-latency audio apps
+for Windows Store. You can find the Beat Builder sample code <a href="https://github.com/jolson88/BeatBuilder">published on GitHub</a>
+under the MIT License. A question that has come up though is how you could have all your sound synthesis code
+in C#. So let&rsquo;s dig into how to do that in this blog post.</p>
+
+<p><em>NOTE: This post doesn&rsquo;t dive into using 3rd party libraries like NAudio, PortAudio, Jack, etc.
+Perhaps in a future post we will get into some of these :).</em></p>
+
+<p>Just for sake of consistency with the Beat Builder sample code, I&rsquo;m going to keep the core of my
+audio renderer (the code that hooks into WASAPI) in C++. But what I want to do is expose a way for
+other languages (yes, even JavaScript) to be able to generate audio data that is going to be
+rendered by this core code. Anybody who has written audio generation code will know (whether
+WASAPI-based, VST-based, etc.), it boils down very basically to one function:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='c++'><span class='line'><span class="kt">void</span> <span class="nf">Process</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span> <span class="n">bufferToFill</span><span class="p">,</span> <span class="kt">int</span> <span class="n">bufferLength</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>So here&rsquo;s our first challenge. WinRT doesn&rsquo;t have the concept of a pointer. WinRT does have arrays,
+but there’s one issue we have to think about: memory copying. Because of how tight the audio rendering
+loop is (and how often it’s called), we need to be very conscious of the number of times our buffer is
+copied. We want to avoid having too many excessive temporary objects/copies to avoid churning the
+generational garbage collector in the CLR. The last thing we want to do is trigger extra collection
+runs and introduce potential audio glitches into our synthesis engine.</p>
+
+<p>Ideally, we will never copy our buffer. Doing buffer copies when you cross a language boundary in WinRT
+would be A Bad Thing. So arrays are out. But without Pointers, how do we represent a section of memory
+to be populated with data? The <a href="http://msdn.microsoft.com/en-us/library/windows/apps/windows.storage.streams.buffer">Windows.Storage.Streams.Buffer class</a> (and the IBuffer interface). Upside: .NET has some good helpers to make working with Buffers easier by interop’ing with Arrays and such. Downside: Each one of these mechanisms copy the underlying buffer first!
+And looking at the class, there’s no methods or properties that allow us to actually get to the underlying
+data… So how do we actually do this?</p>
+
+<p>Windows.Storage.Streams.Buffer not only implements the IBuffer WinRT interface, it also implements a COM
+interface named <a href="http://msdn.microsoft.com/en-us/library/hh846267(v=vs.85">IBufferByteAccess</a>.aspx). By
+querying an IBuffer interface for the IBufferByteAccess COM interface, we can then get access directly
+to the buffer’s backing byte* data through IBufferByteAccess’s Buffer property. To do this in C#, we need
+to define this COM interface using the standard COM interop mechanisms in the CLR:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='c#'><span class='line'><span class="na">[ComImport]</span>
+</span><span class='line'><span class="na">[Guid(&quot;905a0fef-bc53-11df-8c49-001e4fc686da&quot;)]</span>
+</span><span class='line'><span class="na">[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]</span>
+</span><span class='line'><span class="k">internal</span> <span class="k">interface</span> <span class="n">IBufferByteAccess</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="k">unsafe</span> <span class="kt">byte</span><span class="p">*</span> <span class="n">Buffer</span>
+</span><span class='line'>  <span class="p">{</span>
+</span><span class='line'>      <span class="k">get</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In an unsafe method, we can now use this to get the underlying byte<em>, cast it to a float</em> for our audio code,
+and start filling the buffer from C# (that was passed to us across the WinRT boundary from C++ using the Buffer
+runtime class and IBuffer interface).  This will of course require you to compile your project with the “Allow
+Unsafe Code” option set since you will need unsafe code to write pointers in C#.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='c#'><span class='line'><span class="k">public</span> <span class="k">unsafe</span> <span class="k">void</span> <span class="nf">FillSamples</span><span class="p">(</span><span class="n">IBuffer</span> <span class="n">bufferToFill</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="n">IBufferByteAccess</span> <span class="n">byteAccess</span> <span class="p">=</span> <span class="p">(</span><span class="n">IBufferByteAccess</span><span class="p">)</span><span class="n">bufferToFill</span><span class="p">;</span>
+</span><span class='line'>  <span class="kt">float</span><span class="p">*</span> <span class="n">dataPtr</span> <span class="p">=</span> <span class="p">(</span><span class="kt">float</span><span class="p">*)</span><span class="n">byteAccess</span><span class="p">.</span><span class="n">Buffer</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// Now we can have dataPtr[0]...dataPtr[n] to generate our samples</span>
+</span><span class='line'>  <span class="c1">// without any extra copies</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Rather than requiring unsafe to litter my code in different places, I’ve created a helper class (FloatBuffer) in
+the BeatBuilder sample code on GitHub to make it easier to work with:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+</pre></td><td class='code'><pre><code class='c#'><span class='line'><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">System.Collections.Generic</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">System.Runtime.InteropServices</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">System.Text</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">Windows.Storage.Streams</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">namespace</span> <span class="nn">BeatBuilder.Audio</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">unsafe</span> <span class="k">class</span> <span class="nc">FloatBuffer</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">private</span> <span class="n">IBuffer</span> <span class="n">m_buffer</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="kt">float</span><span class="p">*</span> <span class="n">m_dataPtr</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="kt">uint</span> <span class="n">Length</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">m_buffer</span><span class="p">.</span><span class="n">Capacity</span> <span class="p">/</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">float</span><span class="p">);</span> <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="kt">float</span> <span class="k">this</span><span class="p">[</span><span class="kt">int</span> <span class="n">key</span><span class="p">]</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">get</span>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="n">key</span> <span class="p">&gt;</span> <span class="k">this</span><span class="p">.</span><span class="n">Length</span><span class="p">)</span>
+</span><span class='line'>                    <span class="k">throw</span> <span class="k">new</span> <span class="nf">IndexOutOfRangeException</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="k">return</span> <span class="n">m_dataPtr</span><span class="p">[</span><span class="n">key</span><span class="p">];</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="k">set</span>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="n">key</span> <span class="p">&gt;</span> <span class="k">this</span><span class="p">.</span><span class="n">Length</span><span class="p">)</span>
+</span><span class='line'>                    <span class="k">throw</span> <span class="k">new</span> <span class="nf">IndexOutOfRangeException</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">m_dataPtr</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="nf">FloatBuffer</span><span class="p">(</span><span class="n">IBuffer</span> <span class="n">buffer</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">m_buffer</span> <span class="p">=</span> <span class="n">buffer</span><span class="p">;</span>
+</span><span class='line'>            <span class="n">m_dataPtr</span> <span class="p">=</span> <span class="p">(</span><span class="kt">float</span><span class="p">*)((</span><span class="n">IBufferByteAccess</span><span class="p">)</span><span class="n">buffer</span><span class="p">).</span><span class="n">Buffer</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Using this helper class, I can create a simple lookup-table-based Oscillator class in C# that generates a pure
+Sin wave that can plug in to my C++/CX AudioRenderer class. That way, only the base WASAPI hooks are in C++ and
+my audio generation code can remain in C# if I want it that way.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+</pre></td><td class='code'><pre><code class='c#'><span class='line'><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">System.Collections.Generic</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">System.Text</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">Windows.Storage.Streams</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">namespace</span> <span class="nn">BeatBuilder.Audio</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">class</span> <span class="nc">Oscillator</span> <span class="p">:</span> <span class="n">ISoundSource</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">private</span> <span class="k">static</span> <span class="kt">int</span> <span class="n">LOOKUP_SAMPLE_COUNT</span> <span class="p">=</span> <span class="m">2048</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">private</span> <span class="kt">bool</span> <span class="n">m_isOn</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="kt">double</span> <span class="n">m_frequency</span> <span class="p">=</span> <span class="m">440</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="kt">double</span> <span class="n">m_phaseDelta</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="kt">double</span> <span class="n">m_phaseAccumulator</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="kt">float</span><span class="p">[]</span> <span class="n">m_sampleLookup</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="n">WaveFormat</span> <span class="n">m_waveFormat</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="nf">Oscillator</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">m_sampleLookup</span> <span class="p">=</span> <span class="k">new</span> <span class="kt">float</span><span class="p">[</span><span class="n">LOOKUP_SAMPLE_COUNT</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">// Build just a sin-wave lookup table for now</span>
+</span><span class='line'>            <span class="k">for</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span> <span class="n">i</span> <span class="p">&lt;</span> <span class="n">m_sampleLookup</span><span class="p">.</span><span class="n">Length</span><span class="p">;</span> <span class="n">i</span><span class="p">++)</span>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="n">m_sampleLookup</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">=</span> <span class="p">(</span><span class="kt">float</span><span class="p">)</span><span class="n">Math</span><span class="p">.</span><span class="n">Sin</span><span class="p">((</span><span class="m">2</span> <span class="p">*</span> <span class="n">Math</span><span class="p">.</span><span class="n">PI</span><span class="p">)</span> <span class="p">*</span> <span class="p">(</span><span class="n">i</span> <span class="p">/</span> <span class="p">(</span><span class="kt">double</span><span class="p">)</span><span class="n">LOOKUP_SAMPLE_COUNT</span><span class="p">));</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">private</span> <span class="n">WaveFormat</span> <span class="n">WaveFormat</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">set</span>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="n">m_waveFormat</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+</span><span class='line'>                <span class="n">Recalibrate</span><span class="p">();</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">void</span> <span class="nf">TurnOn</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">m_isOn</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">void</span> <span class="nf">TurnOff</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">m_isOn</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">void</span> <span class="nf">FillNextSamples</span><span class="p">(</span><span class="n">IBuffer</span> <span class="n">bufferToFill</span><span class="p">,</span> <span class="kt">int</span> <span class="n">frameCount</span><span class="p">,</span> <span class="kt">int</span> <span class="n">channels</span><span class="p">,</span> <span class="kt">int</span> <span class="n">sampleRate</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="n">m_isOn</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="kt">var</span> <span class="n">floatBuffer</span> <span class="p">=</span> <span class="k">new</span> <span class="n">FloatBuffer</span><span class="p">(</span><span class="n">bufferToFill</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="c1">// The lookup table is just Mono, so need to output appropriate channels</span>
+</span><span class='line'>                <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span> <span class="n">i</span> <span class="p">&lt;</span> <span class="n">floatBuffer</span><span class="p">.</span><span class="n">Length</span><span class="p">;</span> <span class="n">i</span><span class="p">=</span><span class="n">i</span><span class="p">+</span><span class="n">channels</span><span class="p">)</span>
+</span><span class='line'>                <span class="p">{</span>
+</span><span class='line'>                    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span> <span class="n">j</span> <span class="p">&lt;</span> <span class="n">channels</span><span class="p">;</span> <span class="n">j</span><span class="p">++)</span>
+</span><span class='line'>                    <span class="p">{</span>
+</span><span class='line'>                        <span class="n">floatBuffer</span><span class="p">[</span><span class="n">i</span><span class="p">+</span><span class="n">j</span><span class="p">]</span> <span class="p">=</span> <span class="n">m_sampleLookup</span><span class="p">[(</span><span class="kt">int</span><span class="p">)</span><span class="n">m_phaseAccumulator</span><span class="p">];</span>
+</span><span class='line'>                    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>                    <span class="n">m_phaseAccumulator</span> <span class="p">=</span> <span class="p">(</span><span class="n">m_phaseAccumulator</span> <span class="p">+</span> <span class="n">m_phaseDelta</span><span class="p">)</span> <span class="p">%</span> <span class="n">LOOKUP_SAMPLE_COUNT</span><span class="p">;</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">void</span> <span class="nf">SetWaveFormat</span><span class="p">(</span><span class="n">WaveFormat</span> <span class="n">format</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">this</span><span class="p">.</span><span class="n">WaveFormat</span> <span class="p">=</span> <span class="n">format</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">private</span> <span class="k">void</span> <span class="nf">Recalibrate</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// The wave format of oscillator frequency has changed, so recalibrate oscillator</span>
+</span><span class='line'>            <span class="n">m_phaseDelta</span> <span class="p">=</span> <span class="p">(</span><span class="n">LOOKUP_SAMPLE_COUNT</span> <span class="p">*</span> <span class="n">m_frequency</span><span class="p">)</span> <span class="p">/</span> <span class="n">m_waveFormat</span><span class="p">.</span><span class="n">SamplesPerSecond</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>As mentioned above, all of this is now reflected in the <a href="https://github.com/jolson88/BeatBuilder">Beat Builder project on GitHub</a>.
+Just check out Oscillator.cs and BufferHelpers.cs (and AudioRenderer.cpp if you want to see the hook into
+WASAPI and how I call out to sound generators, a.k.a. classes that implement ISoundSource that the renderer
+is listening to).</p>
+</div>
+  
+  
+
+
+    </article>
+  
   <div class="pagination">
     
     <a href="/blog/archives/"> Archives </a>
@@ -114,6 +498,10 @@
 <section>
   <h1>Recent Posts</h1>
   <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/04/13/windows-store-apps/">Windows Store Apps, WASAPI, and Audio Code in C#</a>
+      </li>
     
   </ul>
 </section>

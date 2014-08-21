@@ -1,24 +1,102 @@
-<?xml version="1.0" encoding="utf-8"?>
-<feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[Coding Coda]]></title>
-  <link href="http://jolson88.github.io/atom.xml" rel="self"/>
-  <link href="http://jolson88.github.io/"/>
-  <updated>2014-08-20T22:38:34-07:00</updated>
-  <id>http://jolson88.github.io/</id>
-  <author>
-    <name><![CDATA[Jason Olson]]></name>
-    
-  </author>
-  <generator uri="http://octopress.org/">Octopress</generator>
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Windows Store Apps, WASAPI, and Audio Code in C# - Coding Coda</title>
+  <meta name="author" content="Jason Olson">
 
   
-  <entry>
-    <title type="html"><![CDATA[Windows Store Apps, WASAPI, and Audio Code in C#]]></title>
-    <link href="http://jolson88.github.io/blog/2014/04/13/windows-store-apps/"/>
-    <updated>2014-04-13T22:10:34-07:00</updated>
-    <id>http://jolson88.github.io/blog/2014/04/13/windows-store-apps</id>
-    <content type="html"><![CDATA[<p>In my recent talk at //Build (<a href="https://channel9.msdn.com/Events/Build/2014/3-548">Sequencers, Synthesizers, and Software, Oh My!</a>),
+  <meta name="description" content="In my recent talk at //Build (Sequencers, Synthesizers, and Software, Oh My!),
+I showed how WASAPI could be used to create low-latency audio apps
+for &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://jolson88.github.io/blog/2014/04/13/windows-store-apps/">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+   <link href="/stylesheets/data-table.css" media="screen, projection" rel="stylesheet" type="text/css" />
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="/javascripts/ender.js"></script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <link href="/atom.xml" rel="alternate" title="Coding Coda" type="application/atom+xml">
+  <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+
+<!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href='http://fonts.googleapis.com/css?family=Lato:400,100,100italic,300,300italic,400italic,700,700italic,900,900italic' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Lora:400,400italic,700,700italic' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Source+Code+Pro:200,300,400,500,600,700,900' rel='stylesheet' type='text/css'>
+
+
+
+
+  
+
+  <style>html{background: url("/images/background.png") no-repeat center center fixed;-webkit-background-size: cover;-moz-background-size: cover;-o-background-size: cover;background-size: cover;}</style>
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+</hgroup>
+
+</header>
+  <!-- <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="https://www.google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:jolson88.github.io" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+</ul>
+
+</nav> -->
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Windows Store Apps, WASAPI, and Audio Code in C#</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-13T22:10:34-07:00" pubdate data-updated="true"></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>In my recent talk at //Build (<a href="https://channel9.msdn.com/Events/Build/2014/3-548">Sequencers, Synthesizers, and Software, Oh My!</a>),
 I showed how WASAPI could be used to create low-latency audio apps
 for Windows Store. You can find the Beat Builder sample code <a href="https://github.com/jolson88/BeatBuilder">published on GitHub</a>
 under the MIT License. A question that has come up though is how you could have all your sound synthesis code
@@ -33,9 +111,9 @@ other languages (yes, even JavaScript) to be able to generate audio data that is
 rendered by this core code. Anybody who has written audio generation code will know (whether
 WASAPI-based, VST-based, etc.), it boils down very basically to one function:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 </pre></td><td class='code'><pre><code class='c++'><span class='line'><span class="kt">void</span> <span class="nf">Process</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span> <span class="n">bufferToFill</span><span class="p">,</span> <span class="kt">int</span> <span class="n">bufferLength</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>So here&rsquo;s our first challenge. WinRT doesn&rsquo;t have the concept of a pointer. WinRT does have arrays,
@@ -57,7 +135,7 @@ querying an IBuffer interface for the IBufferByteAccess COM interface, we can th
 to the buffer’s backing byte* data through IBufferByteAccess’s Buffer property. To do this in C#, we need
 to define this COM interface using the standard COM interop mechanisms in the CLR:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -77,7 +155,7 @@ to define this COM interface using the standard COM interop mechanisms in the CL
 </span><span class='line'>      <span class="k">get</span><span class="p">;</span>
 </span><span class='line'>  <span class="p">}</span>
 </span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>In an unsafe method, we can now use this to get the underlying byte<em>, cast it to a float</em> for our audio code,
@@ -85,7 +163,7 @@ and start filling the buffer from C# (that was passed to us across the WinRT bou
 runtime class and IBuffer interface).  This will of course require you to compile your project with the “Allow
 Unsafe Code” option set since you will need unsafe code to write pointers in C#.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -101,13 +179,13 @@ Unsafe Code” option set since you will need unsafe code to write pointers in C
 </span><span class='line'>  <span class="c1">// Now we can have dataPtr[0]...dataPtr[n] to generate our samples</span>
 </span><span class='line'>  <span class="c1">// without any extra copies</span>
 </span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>Rather than requiring unsafe to litter my code in different places, I’ve created a helper class (FloatBuffer) in
 the BeatBuilder sample code on GitHub to make it easier to work with:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -193,14 +271,14 @@ the BeatBuilder sample code on GitHub to make it easier to work with:</p>
 </span><span class='line'>        <span class="p">}</span>
 </span><span class='line'>    <span class="p">}</span>
 </span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>Using this helper class, I can create a simple lookup-table-based Oscillator class in C# that generates a pure
 Sin wave that can plug in to my C++/CX AudioRenderer class. That way, only the base WASAPI hooks are in C++ and
 my audio generation code can remain in C# if I want it that way.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -358,14 +436,211 @@ my audio generation code can remain in C# if I want it that way.</p>
 </span><span class='line'>        <span class="p">}</span>
 </span><span class='line'>    <span class="p">}</span>
 </span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>As mentioned above, all of this is now reflected in the <a href="https://github.com/jolson88/BeatBuilder">Beat Builder project on GitHub</a>.
 Just check out Oscillator.cs and BufferHelpers.cs (and AudioRenderer.cpp if you want to see the hook into
 WASAPI and how I call out to sound generators, a.k.a. classes that implement ISoundSource that the renderer
 is listening to).</p>
-]]></content>
-  </entry>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
   
-</feed>
+
+<span class="byline author vcard">Posted by <span class="fn">Jason Olson</span></span>
+
+      
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2014-04-13T22:10:34-07:00" pubdate data-updated="true"></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/audio/'>audio</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://jolson88.github.io/blog/2014/04/13/windows-store-apps/" data-via="jolson88" data-counturl="http://jolson88.github.io/blog/2014/04/13/windows-store-apps/" >Tweet</a>
+  
+  
+  
+    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
+  
+</div>
+
+    
+    <p class="meta">
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section id="titles">
+  <a href="http://jolson88.github.io" title="Coding Coda"><img id="logo" src="http://jolson88.github.io/images/logo.jpg" /></a>
+  <h1 id="site_title"><a href="http://jolson88.github.io" title="Coding Coda">Coding Coda</a></h1>
+  <h3 id="site_subtitle">A programming musician? Or a musical programmer?</h3>
+</section>
+
+<section id="menu">
+  <ul>
+    <li><i class="fa fa-home fa-lg"></i><a href="http://jolson88.github.io"> Home </a></li>
+    <li><i class="fa fa-calendar fa-lg"></i><a href="http://jolson88.github.io/blog/archives/"> Archives </a></li>
+    <li><i class="fa fa-user fa-lg"></i><a href="http://jolson88.github.io/about/"> About </a></li>
+    <li><i class="fa fa-rss fa-lg"></i><a href="http://jolson88.github.io/atom.xml"> Feed </a></li>
+  </ul>
+</section>
+
+<section id="social">
+  
+
+  
+
+  
+
+  
+    <a href="https://github.com/jolson88" title="jolson88"><i class="fa fa-github fa-2x"></i></a>
+  
+
+  
+
+  
+    <a href="https://twitter.com/jolson88" title="jolson88"><i class="fa fa-twitter fa-2x"></i></a>
+  
+</section>
+
+
+<section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/04/13/windows-store-apps/">Windows Store Apps, WASAPI, and Audio Code in C#</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating...</li>
+  </ul>
+  
+  <a href="https://github.com/jolson88">@jolson88</a> on GitHub
+  
+  <script type="text/javascript">
+    $.domReady(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'jolson88',
+            count: 8,
+            skip_forks: false,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2014 - Jason Olson -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'codingcoda';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://jolson88.github.io/blog/2014/04/13/windows-store-apps/';
+        var disqus_url = 'http://jolson88.github.io/blog/2014/04/13/windows-store-apps/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = 'http://' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+<div id="fb-root"></div>
+<script>(function(d, s, id) {
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.net/en_US/all.js#appId=212934732101925&xfbml=1";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'facebook-jssdk'));</script>
+
+
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
