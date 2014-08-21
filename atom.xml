@@ -4,7 +4,7 @@
   <title><![CDATA[Coding Coda]]></title>
   <link href="http://jolson88.github.io/atom.xml" rel="self"/>
   <link href="http://jolson88.github.io/"/>
-  <updated>2014-08-20T22:38:34-07:00</updated>
+  <updated>2014-08-20T22:43:13-07:00</updated>
   <id>http://jolson88.github.io/</id>
   <author>
     <name><![CDATA[Jason Olson]]></name>
@@ -52,7 +52,7 @@ And looking at the class, there’s no methods or properties that allow us to ac
 data… So how do we actually do this?</p>
 
 <p>Windows.Storage.Streams.Buffer not only implements the IBuffer WinRT interface, it also implements a COM
-interface named <a href="http://msdn.microsoft.com/en-us/library/hh846267(v=vs.85">IBufferByteAccess</a>.aspx). By
+interface named IBufferByteAccess. By
 querying an IBuffer interface for the IBufferByteAccess COM interface, we can then get access directly
 to the buffer’s backing byte* data through IBufferByteAccess’s Buffer property. To do this in C#, we need
 to define this COM interface using the standard COM interop mechanisms in the CLR:</p>
