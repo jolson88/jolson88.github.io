@@ -1,10 +1,11 @@
+
 <!DOCTYPE html>
 <!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
 <!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
 <!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
 <head>
   <meta charset="utf-8">
-  <title>Coding Coda</title>
+  <title>Windows Store Apps, WASAPI, and Audio Code in C# - Coding Coda</title>
   <meta name="author" content="Jason Olson">
 
   
@@ -19,7 +20,7 @@ for &hellip;">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   
-  <link rel="canonical" href="http://jolson88.github.io/">
+  <link rel="canonical" href="http://jolson88.github.io/blog/2014/04/13/windows-store-apps/">
   <link href="/favicon.png" rel="icon">
   <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
    <link href="/stylesheets/data-table.css" media="screen, projection" rel="stylesheet" type="text/css" />
@@ -67,15 +68,12 @@ for &hellip;">
 </nav> -->
   <div id="main">
     <div id="content">
-      <div class="blog-index">
+      <div>
+<article class="hentry" role="article">
   
-  
-  
-    <article>
-      
   <header>
     
-      <h1 class="entry-title"><a href="/blog/2014/04/13/windows-store-apps/">Windows Store Apps, WASAPI, and Audio Code in C#</a></h1>
+      <h1 class="entry-title">Windows Store Apps, WASAPI, and Audio Code in C#</h1>
     
     
       <p class="meta">
@@ -98,7 +96,7 @@ for &hellip;">
   </header>
 
 
-  <div class="entry-content"><p>In my recent talk at //Build (<a href="https://channel9.msdn.com/Events/Build/2014/3-548">Sequencers, Synthesizers, and Software, Oh My!</a>),
+<div class="entry-content"><p>In my recent talk at //Build (<a href="https://channel9.msdn.com/Events/Build/2014/3-548">Sequencers, Synthesizers, and Software, Oh My!</a>),
 I showed how WASAPI could be used to create low-latency audio apps
 for Windows Store. You can find the Beat Builder sample code <a href="https://github.com/jolson88/BeatBuilder">published on GitHub</a>
 under the MIT License. A question that has come up though is how you could have all your sound synthesis code
@@ -113,9 +111,9 @@ other languages (yes, even JavaScript) to be able to generate audio data that is
 rendered by this core code. Anybody who has written audio generation code will know (whether
 WASAPI-based, VST-based, etc.), it boils down very basically to one function:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 </pre></td><td class='code'><pre><code class='c++'><span class='line'><span class="kt">void</span> <span class="nf">Process</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span> <span class="n">bufferToFill</span><span class="p">,</span> <span class="kt">int</span> <span class="n">bufferLength</span><span class="p">);</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>So here&rsquo;s our first challenge. WinRT doesn&rsquo;t have the concept of a pointer. WinRT does have arrays,
@@ -137,7 +135,7 @@ querying an IBuffer interface for the IBufferByteAccess COM interface, we can th
 to the buffer’s backing byte* data through IBufferByteAccess’s Buffer property. To do this in C#, we need
 to define this COM interface using the standard COM interop mechanisms in the CLR:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -157,7 +155,7 @@ to define this COM interface using the standard COM interop mechanisms in the CL
 </span><span class='line'>      <span class="k">get</span><span class="p">;</span>
 </span><span class='line'>  <span class="p">}</span>
 </span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>In an unsafe method, we can now use this to get the underlying byte<em>, cast it to a float</em> for our audio code,
@@ -165,7 +163,7 @@ and start filling the buffer from C# (that was passed to us across the WinRT bou
 runtime class and IBuffer interface).  This will of course require you to compile your project with the “Allow
 Unsafe Code” option set since you will need unsafe code to write pointers in C#.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -181,13 +179,13 @@ Unsafe Code” option set since you will need unsafe code to write pointers in C
 </span><span class='line'>  <span class="c1">// Now we can have dataPtr[0]...dataPtr[n] to generate our samples</span>
 </span><span class='line'>  <span class="c1">// without any extra copies</span>
 </span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>Rather than requiring unsafe to litter my code in different places, I’ve created a helper class (FloatBuffer) in
 the BeatBuilder sample code on GitHub to make it easier to work with:</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -273,14 +271,14 @@ the BeatBuilder sample code on GitHub to make it easier to work with:</p>
 </span><span class='line'>        <span class="p">}</span>
 </span><span class='line'>    <span class="p">}</span>
 </span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>Using this helper class, I can create a simple lookup-table-based Oscillator class in C# that generates a pure
 Sin wave that can plug in to my C++/CX AudioRenderer class. That way, only the base WASAPI hooks are in C++ and
 my audio generation code can remain in C# if I want it that way.</p>
 
-<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<div class='bogus-wrapper'><notextile><figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 <span class='line-number'>2</span>
 <span class='line-number'>3</span>
 <span class='line-number'>4</span>
@@ -438,7 +436,7 @@ my audio generation code can remain in C# if I want it that way.</p>
 </span><span class='line'>        <span class="p">}</span>
 </span><span class='line'>    <span class="p">}</span>
 </span><span class='line'><span class="p">}</span>
-</span></code></pre></td></tr></table></div></figure>
+</span></code></pre></td></tr></table></div></figure></notextile></div>
 
 
 <p>As mentioned above, all of this is now reflected in the <a href="https://github.com/jolson88/BeatBuilder">Beat Builder project on GitHub</a>.
@@ -446,18 +444,65 @@ Just check out Oscillator.cs and BufferHelpers.cs (and AudioRenderer.cpp if you 
 WASAPI and how I call out to sound generators, a.k.a. classes that implement ISoundSource that the renderer
 is listening to).</p>
 </div>
+
+
+  <footer>
+    <p class="meta">
+      
   
+
+<span class="byline author vcard">Posted by <span class="fn">Jason Olson</span></span>
+
+      
+
+
+
+
+
+
+
+
   
 
 
-    </article>
+<time datetime="2014-04-13T22:10:34-07:00" pubdate data-updated="true"></time>
+      
+
+<span class="categories">
   
-  <div class="pagination">
+    <a class='category' href='/blog/categories/audio/'>audio</a>
+  
+</span>
+
+
+    </p>
     
-    <a href="/blog/archives/"> Archives </a>
-    
-  </div>
+      <div class="sharing">
+  
+  <a href="http://twitter.com/share" class="twitter-share-button" data-url="http://jolson88.github.io/blog/2014/04/13/windows-store-apps/" data-via="jolson88" data-counturl="http://jolson88.github.io/blog/2014/04/13/windows-store-apps/" >Tweet</a>
+  
+  
+  
+    <div class="fb-like" data-send="true" data-width="450" data-show-faces="false"></div>
+  
 </div>
+
+    
+    <p class="meta">
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
 <aside class="sidebar">
   
     <section id="titles">
@@ -541,6 +586,7 @@ is listening to).</p>
   
 </aside>
 
+
     </div>
   </div>
   <footer role="contentinfo"><p>
@@ -555,7 +601,10 @@ is listening to).</p>
       var disqus_shortname = 'codingcoda';
       
         
-        var disqus_script = 'count.js';
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://jolson88.github.io/blog/2014/04/13/windows-store-apps/';
+        var disqus_url = 'http://jolson88.github.io/blog/2014/04/13/windows-store-apps/';
+        var disqus_script = 'embed.js';
       
     (function () {
       var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
@@ -595,4 +644,3 @@ is listening to).</p>
 
 </body>
 </html>
->>>>>>> e87035012fd25287e736ab9c1fcf05f32085cdbd
