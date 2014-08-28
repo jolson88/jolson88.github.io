@@ -1,0 +1,432 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Coding Coda]]></title>
+  <link href="http://jolson88.github.io/atom.xml" rel="self"/>
+  <link href="http://jolson88.github.io/"/>
+  <updated>2014-08-27T23:24:31-07:00</updated>
+  <id>http://jolson88.github.io/</id>
+  <author>
+    <name><![CDATA[Jason Olson]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[Windows Store Apps, WASAPI, and Audio Code in C#]]></title>
+    <link href="http://jolson88.github.io/blog/2014/04/13/windows-store-apps/"/>
+    <updated>2014-04-13T22:10:34-07:00</updated>
+    <id>http://jolson88.github.io/blog/2014/04/13/windows-store-apps</id>
+    <content type="html"><![CDATA[<p>In my recent talk at //Build (<a href="https://channel9.msdn.com/Events/Build/2014/3-548">Sequencers, Synthesizers, and Software, Oh My!</a>),
+I showed how WASAPI could be used to create low-latency audio apps
+for Windows Store. You can find the Beat Builder sample code <a href="https://github.com/jolson88/BeatBuilder">published on GitHub</a>
+under the MIT License. A question that has come up though is how you could have all your sound synthesis code
+in C#. So let&rsquo;s dig into how to do that in this blog post.</p>
+
+<p><em>NOTE: This post doesn&rsquo;t dive into using 3rd party libraries like NAudio, PortAudio, Jack, etc.
+Perhaps in a future post we will get into some of these :).</em></p>
+
+<p>Just for sake of consistency with the Beat Builder sample code, I&rsquo;m going to keep the core of my
+audio renderer (the code that hooks into WASAPI) in C++. But what I want to do is expose a way for
+other languages (yes, even JavaScript) to be able to generate audio data that is going to be
+rendered by this core code. Anybody who has written audio generation code will know (whether
+WASAPI-based, VST-based, etc.), it boils down very basically to one function:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='c++'><span class='line'><span class="kt">void</span> <span class="nf">Process</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span> <span class="n">bufferToFill</span><span class="p">,</span> <span class="kt">int</span> <span class="n">bufferLength</span><span class="p">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>So here&rsquo;s our first challenge. WinRT doesn&rsquo;t have the concept of a pointer. WinRT does have arrays,
+but there’s one issue we have to think about: memory copying. Because of how tight the audio rendering
+loop is (and how often it’s called), we need to be very conscious of the number of times our buffer is
+copied. We want to avoid having too many excessive temporary objects/copies to avoid churning the
+generational garbage collector in the CLR. The last thing we want to do is trigger extra collection
+runs and introduce potential audio glitches into our synthesis engine.</p>
+
+<p>Ideally, we will never copy our buffer. Doing buffer copies when you cross a language boundary in WinRT
+would be A Bad Thing. So arrays are out. But without Pointers, how do we represent a section of memory
+to be populated with data? The <a href="http://msdn.microsoft.com/en-us/library/windows/apps/windows.storage.streams.buffer">Windows.Storage.Streams.Buffer class</a> (and the IBuffer interface). Upside: .NET has some good helpers to make working with Buffers easier by interop’ing with Arrays and such. Downside: Each one of these mechanisms copy the underlying buffer first!
+And looking at the class, there’s no methods or properties that allow us to actually get to the underlying
+data… So how do we actually do this?</p>
+
+<p>Windows.Storage.Streams.Buffer not only implements the IBuffer WinRT interface, it also implements a COM
+interface named IBufferByteAccess. By
+querying an IBuffer interface for the IBufferByteAccess COM interface, we can then get access directly
+to the buffer’s backing byte* data through IBufferByteAccess’s Buffer property. To do this in C#, we need
+to define this COM interface using the standard COM interop mechanisms in the CLR:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+</pre></td><td class='code'><pre><code class='c#'><span class='line'><span class="na">[ComImport]</span>
+</span><span class='line'><span class="na">[Guid(&quot;905a0fef-bc53-11df-8c49-001e4fc686da&quot;)]</span>
+</span><span class='line'><span class="na">[InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]</span>
+</span><span class='line'><span class="k">internal</span> <span class="k">interface</span> <span class="n">IBufferByteAccess</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="k">unsafe</span> <span class="kt">byte</span><span class="p">*</span> <span class="n">Buffer</span>
+</span><span class='line'>  <span class="p">{</span>
+</span><span class='line'>      <span class="k">get</span><span class="p">;</span>
+</span><span class='line'>  <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>In an unsafe method, we can now use this to get the underlying byte<em>, cast it to a float</em> for our audio code,
+and start filling the buffer from C# (that was passed to us across the WinRT boundary from C++ using the Buffer
+runtime class and IBuffer interface).  This will of course require you to compile your project with the “Allow
+Unsafe Code” option set since you will need unsafe code to write pointers in C#.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='c#'><span class='line'><span class="k">public</span> <span class="k">unsafe</span> <span class="k">void</span> <span class="nf">FillSamples</span><span class="p">(</span><span class="n">IBuffer</span> <span class="n">bufferToFill</span><span class="p">)</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>  <span class="n">IBufferByteAccess</span> <span class="n">byteAccess</span> <span class="p">=</span> <span class="p">(</span><span class="n">IBufferByteAccess</span><span class="p">)</span><span class="n">bufferToFill</span><span class="p">;</span>
+</span><span class='line'>  <span class="kt">float</span><span class="p">*</span> <span class="n">dataPtr</span> <span class="p">=</span> <span class="p">(</span><span class="kt">float</span><span class="p">*)</span><span class="n">byteAccess</span><span class="p">.</span><span class="n">Buffer</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c1">// Now we can have dataPtr[0]...dataPtr[n] to generate our samples</span>
+</span><span class='line'>  <span class="c1">// without any extra copies</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Rather than requiring unsafe to litter my code in different places, I’ve created a helper class (FloatBuffer) in
+the BeatBuilder sample code on GitHub to make it easier to work with:</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+</pre></td><td class='code'><pre><code class='c#'><span class='line'><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">System.Collections.Generic</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">System.Runtime.InteropServices</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">System.Text</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">Windows.Storage.Streams</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">namespace</span> <span class="nn">BeatBuilder.Audio</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">unsafe</span> <span class="k">class</span> <span class="nc">FloatBuffer</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">private</span> <span class="n">IBuffer</span> <span class="n">m_buffer</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="kt">float</span><span class="p">*</span> <span class="n">m_dataPtr</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="kt">uint</span> <span class="n">Length</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">get</span> <span class="p">{</span> <span class="k">return</span> <span class="n">m_buffer</span><span class="p">.</span><span class="n">Capacity</span> <span class="p">/</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">float</span><span class="p">);</span> <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="kt">float</span> <span class="k">this</span><span class="p">[</span><span class="kt">int</span> <span class="n">key</span><span class="p">]</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">get</span>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="n">key</span> <span class="p">&gt;</span> <span class="k">this</span><span class="p">.</span><span class="n">Length</span><span class="p">)</span>
+</span><span class='line'>                    <span class="k">throw</span> <span class="k">new</span> <span class="nf">IndexOutOfRangeException</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="k">return</span> <span class="n">m_dataPtr</span><span class="p">[</span><span class="n">key</span><span class="p">];</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>            <span class="k">set</span>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="p">(</span><span class="n">key</span> <span class="p">&gt;</span> <span class="k">this</span><span class="p">.</span><span class="n">Length</span><span class="p">)</span>
+</span><span class='line'>                    <span class="k">throw</span> <span class="k">new</span> <span class="nf">IndexOutOfRangeException</span><span class="p">();</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="n">m_dataPtr</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="nf">FloatBuffer</span><span class="p">(</span><span class="n">IBuffer</span> <span class="n">buffer</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">m_buffer</span> <span class="p">=</span> <span class="n">buffer</span><span class="p">;</span>
+</span><span class='line'>            <span class="n">m_dataPtr</span> <span class="p">=</span> <span class="p">(</span><span class="kt">float</span><span class="p">*)((</span><span class="n">IBufferByteAccess</span><span class="p">)</span><span class="n">buffer</span><span class="p">).</span><span class="n">Buffer</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Using this helper class, I can create a simple lookup-table-based Oscillator class in C# that generates a pure
+Sin wave that can plug in to my C++/CX AudioRenderer class. That way, only the base WASAPI hooks are in C++ and
+my audio generation code can remain in C# if I want it that way.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+</pre></td><td class='code'><pre><code class='c#'><span class='line'><span class="k">using</span> <span class="nn">System</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">System.Collections.Generic</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">System.Text</span><span class="p">;</span>
+</span><span class='line'><span class="k">using</span> <span class="nn">Windows.Storage.Streams</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="k">namespace</span> <span class="nn">BeatBuilder.Audio</span>
+</span><span class='line'><span class="p">{</span>
+</span><span class='line'>    <span class="k">public</span> <span class="k">class</span> <span class="nc">Oscillator</span> <span class="p">:</span> <span class="n">ISoundSource</span>
+</span><span class='line'>    <span class="p">{</span>
+</span><span class='line'>        <span class="k">private</span> <span class="k">static</span> <span class="kt">int</span> <span class="n">LOOKUP_SAMPLE_COUNT</span> <span class="p">=</span> <span class="m">2048</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">private</span> <span class="kt">bool</span> <span class="n">m_isOn</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="kt">double</span> <span class="n">m_frequency</span> <span class="p">=</span> <span class="m">440</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="kt">double</span> <span class="n">m_phaseDelta</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="kt">double</span> <span class="n">m_phaseAccumulator</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="kt">float</span><span class="p">[]</span> <span class="n">m_sampleLookup</span><span class="p">;</span>
+</span><span class='line'>        <span class="k">private</span> <span class="n">WaveFormat</span> <span class="n">m_waveFormat</span><span class="p">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="nf">Oscillator</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">m_sampleLookup</span> <span class="p">=</span> <span class="k">new</span> <span class="kt">float</span><span class="p">[</span><span class="n">LOOKUP_SAMPLE_COUNT</span><span class="p">];</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="c1">// Build just a sin-wave lookup table for now</span>
+</span><span class='line'>            <span class="k">for</span><span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span> <span class="n">i</span> <span class="p">&lt;</span> <span class="n">m_sampleLookup</span><span class="p">.</span><span class="n">Length</span><span class="p">;</span> <span class="n">i</span><span class="p">++)</span>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="n">m_sampleLookup</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="p">=</span> <span class="p">(</span><span class="kt">float</span><span class="p">)</span><span class="n">Math</span><span class="p">.</span><span class="n">Sin</span><span class="p">((</span><span class="m">2</span> <span class="p">*</span> <span class="n">Math</span><span class="p">.</span><span class="n">PI</span><span class="p">)</span> <span class="p">*</span> <span class="p">(</span><span class="n">i</span> <span class="p">/</span> <span class="p">(</span><span class="kt">double</span><span class="p">)</span><span class="n">LOOKUP_SAMPLE_COUNT</span><span class="p">));</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">private</span> <span class="n">WaveFormat</span> <span class="n">WaveFormat</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">set</span>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="n">m_waveFormat</span> <span class="p">=</span> <span class="k">value</span><span class="p">;</span>
+</span><span class='line'>                <span class="n">Recalibrate</span><span class="p">();</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">void</span> <span class="nf">TurnOn</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">m_isOn</span> <span class="p">=</span> <span class="k">true</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">void</span> <span class="nf">TurnOff</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="n">m_isOn</span> <span class="p">=</span> <span class="k">false</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">void</span> <span class="nf">FillNextSamples</span><span class="p">(</span><span class="n">IBuffer</span> <span class="n">bufferToFill</span><span class="p">,</span> <span class="kt">int</span> <span class="n">frameCount</span><span class="p">,</span> <span class="kt">int</span> <span class="n">channels</span><span class="p">,</span> <span class="kt">int</span> <span class="n">sampleRate</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="p">(</span><span class="n">m_isOn</span><span class="p">)</span>
+</span><span class='line'>            <span class="p">{</span>
+</span><span class='line'>                <span class="kt">var</span> <span class="n">floatBuffer</span> <span class="p">=</span> <span class="k">new</span> <span class="n">FloatBuffer</span><span class="p">(</span><span class="n">bufferToFill</span><span class="p">);</span>
+</span><span class='line'>
+</span><span class='line'>                <span class="c1">// The lookup table is just Mono, so need to output appropriate channels</span>
+</span><span class='line'>                <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span> <span class="n">i</span> <span class="p">&lt;</span> <span class="n">floatBuffer</span><span class="p">.</span><span class="n">Length</span><span class="p">;</span> <span class="n">i</span><span class="p">=</span><span class="n">i</span><span class="p">+</span><span class="n">channels</span><span class="p">)</span>
+</span><span class='line'>                <span class="p">{</span>
+</span><span class='line'>                    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">j</span> <span class="p">=</span> <span class="m">0</span><span class="p">;</span> <span class="n">j</span> <span class="p">&lt;</span> <span class="n">channels</span><span class="p">;</span> <span class="n">j</span><span class="p">++)</span>
+</span><span class='line'>                    <span class="p">{</span>
+</span><span class='line'>                        <span class="n">floatBuffer</span><span class="p">[</span><span class="n">i</span><span class="p">+</span><span class="n">j</span><span class="p">]</span> <span class="p">=</span> <span class="n">m_sampleLookup</span><span class="p">[(</span><span class="kt">int</span><span class="p">)</span><span class="n">m_phaseAccumulator</span><span class="p">];</span>
+</span><span class='line'>                    <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>                    <span class="n">m_phaseAccumulator</span> <span class="p">=</span> <span class="p">(</span><span class="n">m_phaseAccumulator</span> <span class="p">+</span> <span class="n">m_phaseDelta</span><span class="p">)</span> <span class="p">%</span> <span class="n">LOOKUP_SAMPLE_COUNT</span><span class="p">;</span>
+</span><span class='line'>                <span class="p">}</span>
+</span><span class='line'>            <span class="p">}</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">public</span> <span class="k">void</span> <span class="nf">SetWaveFormat</span><span class="p">(</span><span class="n">WaveFormat</span> <span class="n">format</span><span class="p">)</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="k">this</span><span class="p">.</span><span class="n">WaveFormat</span> <span class="p">=</span> <span class="n">format</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="k">private</span> <span class="k">void</span> <span class="nf">Recalibrate</span><span class="p">()</span>
+</span><span class='line'>        <span class="p">{</span>
+</span><span class='line'>            <span class="c1">// The wave format of oscillator frequency has changed, so recalibrate oscillator</span>
+</span><span class='line'>            <span class="n">m_phaseDelta</span> <span class="p">=</span> <span class="p">(</span><span class="n">LOOKUP_SAMPLE_COUNT</span> <span class="p">*</span> <span class="n">m_frequency</span><span class="p">)</span> <span class="p">/</span> <span class="n">m_waveFormat</span><span class="p">.</span><span class="n">SamplesPerSecond</span><span class="p">;</span>
+</span><span class='line'>        <span class="p">}</span>
+</span><span class='line'>    <span class="p">}</span>
+</span><span class='line'><span class="p">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>As mentioned above, all of this is now reflected in the <a href="https://github.com/jolson88/BeatBuilder">Beat Builder project on GitHub</a>.
+Just check out Oscillator.cs and BufferHelpers.cs (and AudioRenderer.cpp if you want to see the hook into
+WASAPI and how I call out to sound generators, a.k.a. classes that implement ISoundSource that the renderer
+is listening to).</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[My comprehensive must-read books about technology]]></title>
+    <link href="http://jolson88.github.io/blog/2009/12/19/my-comprehensive-must-read-books-about-technology/"/>
+    <updated>2009-12-19T21:37:59-08:00</updated>
+    <id>http://jolson88.github.io/blog/2009/12/19/my-comprehensive-must-read-books-about-technology</id>
+    <content type="html"><![CDATA[<p>The other day on Twitter, some friends and I were discussing the narrative books we like that are about technology (not technical books themselves). These are books about notable figures in the technology field, about the history of a specific technology, and so on. Here is my list of books that I consider must-reads for those techies out there that like this type of stuff (in no particular order).</p>
+
+<p>If one of your favorite books is not on this list, please leave a comment as I would love to have more books to add to my list :).</p>
+
+<h2>Jason&rsquo;s Must-Read</h2>
+
+<ol>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0393330435?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0393330435">iWoz: Computer Geek to Cult Icon: How I Invented the Personal Computer, Co-Founded Apple, and Had Fun Doing It</a>. This is perhaps one of my most favorite books on a notable figure in the technology field. Though I’m not personally a hardware guy, it’s hard to find somebody to look up to more than Steve Wozniak. He is most definitely the Mozart of hardware design. I usually find the last part of the book (when it’s less technical) less interesting, but don’t let that deter you from a great book!</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0066620732?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0066620732">Just for Fun: The Story of an Accidental Revolutionary</a>. This is a book all about Linus Torvalds and the creation of Linux. It’s when it’s being very technical that I think it is at its best. Then again, I’m a geek :). Gives especially interesting insight into the motivations and life of Linus. A thoroughly enjoyable read.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0767904338?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0767904338">The Second Coming of Steve Jobs</a>. It’s amazing the difference a single person can make in the direction and drive of a large company. I personally think it is one of the reasons Apple is who they are. There is no doubt that Steve Jobs is a major influence and he probably single-handedly saved the company when he returned. This is a very interesting read to get some insight into the events surrounding his return to Apple.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0759285780?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0759285780">Showstopper! The Breakneck Race to Create Windows NT and the Next Generation at Microsoft</a>. Ah, the creation of Windows NT. Quite the milestone for Microsoft. This book gives good insights into the culture of the Windows division at the time and the many different conflicts that were happening at the time that impacted the development of Windows NT. If you’re a “Microsoft Guy” (as in, you know of executives like Soma, Bob Muglia, and the like), you will find yourself recognizing many names within this book (like when Soma was a tester in the Windows division). At the heart of it is Dave Cutler. There are many times where you’ll either laugh or be incredibly scared at some of the behavior by Dave Cutler as he pushed his time to finish and ship Windows NT.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0061624268?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0061624268">Microserfs: A Novel (P.S.)</a>. Let’s say one thing, this book is not based on a true story. However, it might as well be. It probably shouldn’t be on this list as it is a fictional book. Oh well! From what I’ve heard, it captures much of the feeling and culture of what it was like to work at Microsoft in the late 1980s and early 1990s. Even before working at Microsoft, I enjoyed this book very much. However, after joining Microsoft, I really like this book :). It’s very interesting to “get” some of the inside jokes after knowing Microsoft from the inside (like the main character working in Building 7 (which doesn’t exist and is a part of Microsoft lore)). If you’re familiar with the areas of Redmond and Bellevue that surround Microsoft’s main campus, you’ll smile several times during this book. The book isn’t entirely based at Microsoft as many of the characters “move on” to different things. <em>Interestingly enough, I have a version of this book as a “Book on Tape” that is narrated by Matthew Perry (yes, of Friends fame).</em></p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0316491977?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0316491977">The Soul Of A New Machine</a>. This book tells the story of the one-year development of a 32-bit minicomputer built by Data General engineers in the 1970s. It’s a crazy time shown in this book and a fun read. On the verge of being a page-turner. I’m glad I don’t work on a team like this :). But it was definitely quite the time to be involved in the computer industry.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/1430219483?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=1430219483">Coders at Work</a>. An absolutely masterful set of interviews done with well-known subjects from all over the computer field. In this book, you will find interviews ranging from Guy Steel (father of Scheme/Lisp), to Donald Knuth, to Simon Peyton Jones (of Haskell fame), and many others. This book is very suited to sudden starts and stops so I found myself reading it before bed and when I had quick breaks during the day. Though I skipped around a bunch, I found myself with a compulsive need to read every single interview in the book (and it’s hard to find an interview in the book less than 40 pages long). A must read, especially for programmers.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0071358927?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0071358927">Fire in the Valley: The Making of The Personal Computer (Second Edition)</a>. This is most definitely not a narrative. It’s actually a borderline encyclopedia on the making of the personal computer. You don’t sit down and read this book through in one sitting (it’s massive to-boot). But it’s still fun to have this one on the shelf to go through from time to time to get a fairly complete breakdown on all the events (and their timelines) that led to the development of the personal computer (and how it evolved).</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/1400082471?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=1400082471">Dreaming in Code: Two Dozen Programmers, Three Years, 4,732 Bugs, and One Quest for Transcendent Software</a>. If you like The Soul Of A New Machine, you should like this book as well (and vice versa). This book is largely considered a “modern retelling” of Soul Of A New Machine by many people. Having read both books, I can’t exactly disagree with that sentiment. Provides much of the same context and insight into the computer field for a more modern age that Soul Of A New Machine did for the 1970s.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.smalltalk.org/smalltalk/TheEarlyHistoryOfSmalltalk_Abstract.html">The Early History of Smalltalk (free PDF available)</a>. Yes, this is not a book. This is actually a paper written by Alan Kay himself. This means you can’t get any more accurate about all the events leading up to the birth of Smalltalk, considering it was written by the visionary behind Smalltalk. In this paper, Alan goes back all the way to his college days and talks about many of the cutting edge research being done in the computer field that gave the inspiration that ultimately led to the development of Smalltalk. I can’t express enough how much I believe this to be a must-read for any language fan/geek. Do it now, there is no excuse to download the PDF as you are reading this!</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0596515170?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0596515170">Masterminds of Programming: Conversations with the Creators of Major Programming Languages (Theory in Practice (O’Reilly))</a>. If you don’t know already, I’m a language geek. I’m fascinated by the design and implementation of programming languages. With that in mind, there should be no surprise on why I like this book so much. This book (as the title says) contains a bunch of interviews with many different implementers of major programming languages (from C#, to Haskell, to Lua, and many, many others). If you’re a language geek like myself, there is simply no excuse not to read this book.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0470229055?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0470229055">The Annotated Turing: A Guided Tour Through Alan Turing’s Historic Paper on Computability and the Turing Machine</a>. Heard of Turing Machines? Perhaps you’re not a mathematician? If so, this is a fantastic read. In this book, Charles Petzold provides the background knowledge and context that is required to understand this ground breaking paper written by Alan Turing. Not only that, Charles Petzold will walk you through the paper practically sentence-for-sentence breaking down exactly what it means and the ramifications for each section. This book can order on “brain explosion” from time to time, but well worth the effort to read it. I almost didn’t put it on this list as it is not nearly as narrative as the other books on this list, but I would rank it as just as awesome as the others :).</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0735611319?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0735611319">Code: The Hidden Language of Computer Hardware and Software</a>. Similar to The Annotated Turing above, it’s hard to say whether this book actually belongs on this list or not as it is quite the technical book. I’m fascinated by how things work, and this book walks you all the way from logical gates (AND, OR, XOR, etc.) to how, specifically, memory works (all the way down to the logical gate level), and even how CPUs work. You’ll find yourself starting with basics like light bulbs and switches, and ending with the basics of computers. Another “gold-star” to Charles Petzold for this book. Get it!</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/1565123778?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=1565123778">In Code: A Mathematical Journey</a>. I’m not a mathematician. In fact, compared to other software developers I know, my math skills and knowledge is pretty poor. Yet I continue to find myself intrigued by topics like Cryptography. If that sounds like you, this book is a must-have. It chronicles the journey of a young woman through the land of mathematics and into the realm of cryptography. It is truly amazing what this young woman accomplishes at her age. This book tells the narrative in such a way that you get to understand how it works as well as she works along. And we’re not talking about “Cryptography 101” either :). There are definitely times in this book that you need to stop and “absorb” the information for a while.</p></li>
+</ol>
+
+
+<h2>Jason&rsquo;s Must-Watch</h2>
+
+<p>The following ones are technically “must-watch” as they are videos, not books. But I find myself popping them in when I’m in one of those moods (and want some video playing in the background while I code).</p>
+
+<ol>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/B0009NSCS0?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=B0009NSCS0">Pirates of Silicon Valley</a>. This is a made-for-TV movie based on the book Fire In The Valley from above. It mostly focuses on the early days of Apple and Microsoft and the interaction between the two. Not 100% accurate, but mostly accurate. Fun to watch.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/B00006FXQO?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=B00006FXQO">Triumph of the Nerds</a>. An early (pre-Windows 95 launch) three-part documentary done by Robert X. Cringley. Has some interesting interviews with Steve Ballmer, Bill Gates, Larry Ellison, Steve Jobs, and more. Discusses some of the conflicts between IBM and Microsoft towards the end of that partnership as well as diving back into some of the early history of the Altair and Apple 2.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/B0000A9GLO?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=B0000A9GLO">Revolution OS</a>. A documentary about the creation and initial rise of Linux. Has interviews with Bruce Perens, Linus Torvalds, Richard M. Stallman, Eric S. Raymond, and the like. Granted, it is a fairly weighted and one-sided presentation (the narrative over Bill Gates’ letter to hobbyists is especially laugh-inducing). But don’t let that get in the way of what is normally a good watch.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/B0009RS0EM?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=B0009RS0EM">Hackers – Wizards of the Electronic Age</a>. It contains a bunch of &ldquo;legendary&rdquo; hackers, what else is there to say?</p></li>
+</ol>
+
+
+<h2>Jason&rsquo;s I-Really-Need-To-Get-Around-To-Reading-These-Myself</h2>
+
+<p>Here are some more that are on my own must-read-this-in-the-future list, I just haven’t gotten around to buying and reading them yet&hellip;</p>
+
+<ol>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0596007191?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0596007191">Revolution in the Valley</a>. This is about how the Mac was made and is written by one of the main engineers of the Mac as well (Andy Hertzfeld).</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0887306292?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0887306292">Hard Drive: Bill Gates and the Making of the Microsoft Empire</a>. It seems ridiculous that I’m a Microsoft employee and don’t have a single book on Bill Gates (yet my bookshelf is stocked with books on Linus, Steve Jobs, Steve Wozniak, etc.). This one looks like a fairly good read to.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0141000511?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0141000511">Hackers: Heroes of the Computer Revolution</a>. I think the title says it all. Sounds like a fun read!</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0262620758?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0262620758">A Few Good Men from UNIVAC (History of Computing)</a>. Based on how much I enjoyed The Soul Of A New Machine and how much I like computer history, I definitely want give this one a read.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/1583482660?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=1583482660">Fumbling the Future: How Xerox Invented, then Ignored, the First Personal Computer</a>. I’ve always had great respect and admiration for those people that worked at Xerox PARC in its heyday. I think every geek needs to realize the sheer amount of technologies that our modern computer world is built on (that we take for granted) that were all founded and built at Xerox PARC. An amazing story.</p></li>
+<li><p><a href="http://web.archive.org/web/20111102095939/http://www.amazon.com/gp/product/0674016173?ie=UTF8&amp;tag=manaworl-20&amp;linkCode=as2&amp;camp=1789&amp;creative=390957&amp;creativeASIN=0674016173">Analog Days: The Invention and Impact of the Moog Synthesizer</a>. It could be argued that the original Moog synthesizers are what really put synthesis on the map. Though I’m not much of a hardware geek myself, I have always been intrigued by the hardware side of things. This is definitely on my wish list.</p></li>
+</ol>
+
+
+<p>And there you go, my opinions on what are some must-reads and must-watches for other geeks out there. Outside of computers, I’m not much of a history person. I’m not interested by ancient civilizations, the civil war (unless it involves the Oregon Ducks and Oregon State Beavers), or anything of the sort. But computer history? I love it and am incredibly fascinated by it.</p>
+
+<p>Enjoy :).</p>
+]]></content>
+  </entry>
+  
+</feed>
