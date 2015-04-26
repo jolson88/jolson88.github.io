@@ -1,9 +1,0 @@
-<div class="highlight"><pre><span class="k">public</span> <span class="k">unsafe</span> <span class="k">void</span> <span class="nf">FillSamples</span><span class="p">(</span><span class="n">IBuffer</span> <span class="n">bufferToFill</span><span class="p">)</span>
-<span class="p">{</span>
-	<span class="n">IBufferByteAccess</span> <span class="n">byteAccess</span> <span class="p">=</span> <span class="p">(</span><span class="n">IBufferByteAccess</span><span class="p">)</span><span class="n">bufferToFill</span><span class="p">;</span>
-	<span class="kt">float</span><span class="p">*</span> <span class="n">dataPtr</span> <span class="p">=</span> <span class="p">(</span><span class="kt">float</span><span class="p">*)</span><span class="n">byteAccess</span><span class="p">.</span><span class="n">Buffer</span><span class="p">;</span>
-     
-	<span class="c1">// Now we can have dataPtr[0]...dataPtr[n] to generate our samples</span>
-	<span class="c1">// without any extra copies</span>
-<span class="p">}</span>
-</pre></div>
