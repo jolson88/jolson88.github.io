@@ -41,7 +41,7 @@ querying an IBuffer interface for the IBufferByteAccess COM interface, we can th
 to the buffer’s backing byte* data through IBufferByteAccess’s Buffer property. To do this in C#, we need 
 to define this COM interface using the standard COM interop mechanisms in the CLR:
 
-```csharp
+```cs
 {% highlight c# linenos %}
 [ComImport]
 [Guid("905a0fef-bc53-11df-8c49-001e4fc686da")]
