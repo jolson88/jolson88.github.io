@@ -1,11 +1,16 @@
 title:            Coding Coda
-description:      Programming musician? Or a musical programmer? A journey through life, code, and creative things.
-disqus_shortname: hpstrtheme
+description:      A musical programmer's journey through the creative
+disqus_shortname: codingcoda
 reading_time:     false
 words_per_minute: 200
 # Your site's domain goes here (eg: //mmistakes.github.io, http://mademistakes.com, etc)
 # When testing locally leave blank or use http://localhost:4000
-url:
+url:              http://codingcoda.com
+
+image:
+  feature:        header-1.jpg 
+  credit:         leventep
+  creditlink:     http://leventep.deviantart.com/art/abstract-painting-3-421241074
 
 # Owner/author information
 owner:
@@ -15,7 +20,7 @@ owner:
   email:          jolson88@outlook.com
   # Social networking links used in footer. Update and remove as you like.
   twitter:       jolson88 
-  facebook:       
+  facebook:      jason.olson 
   github:        jolson88 
   stackexchange:  
   linkedin:       

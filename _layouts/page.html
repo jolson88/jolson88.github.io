@@ -12,11 +12,11 @@
 {% include browser-upgrade.html %}
 {% include navigation.html %}
 
-{% if page.image.feature %}
+{% if site.image.feature %}
 <div class="entry-header">
-  {% if page.image.credit %}<div class="image-credit">Image source: <a href="{{ page.image.creditlink }}">{{ page.image.credit }}</a></div><!-- /.image-credit -->{% endif %}
+  {% if site.image.credit %}<div class="image-credit">Image source: <a href="{{ site.image.creditlink }}">{{ site.image.credit }}</a></div><!-- /.image-credit -->{% endif %}
   <div class="entry-image">
-    <img src="{{ site.url }}/images/{{ page.image.feature }}" alt="{{ page.title }}">
+    <img src="{{ site.url }}/images/{{ site.image.feature }}" alt="{{ page.title }}">
   </div><!-- /.entry-image -->
 </div><!-- /.entry-header -->
 {% endif %}
