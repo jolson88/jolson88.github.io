@@ -41,7 +41,6 @@ querying an IBuffer interface for the IBufferByteAccess COM interface, we can th
 to the buffer’s backing byte* data through IBufferByteAccess’s Buffer property. To do this in C#, we need 
 to define this COM interface using the standard COM interop mechanisms in the CLR:
 
-```cs
 {% highlight c# linenos %}
 [ComImport]
 [Guid("905a0fef-bc53-11df-8c49-001e4fc686da")]
@@ -54,7 +53,6 @@ internal interface IBufferByteAccess
 	}
 }
 {% endhighlight %}
-```
 
 In an unsafe method, we can now use this to get the underlying byte*, cast it to a float* for our audio code, 
 and start filling the buffer from C# (that was passed to us across the WinRT boundary from C++ using the Buffer 
