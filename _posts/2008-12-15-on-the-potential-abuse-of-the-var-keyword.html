@@ -1,6 +1,7 @@
 ---
 layout: post
 title: On the potential abuse of the var keyword
+tags: [Programming]
 ---
 
 <p>Originally posted on: <a href='http://geekswithblogs.net/jolson/archive/2008/12/14/on-the-potential-abuse-of-the-var-keyword.aspx'>http://geekswithblogs.net/jolson/archive/2008/12/14/on-the-potential-abuse-of-the-var-keyword.aspx</a></p><p>This question/conversation has come up quite often when chatting with friends and other developers. With the introduction of the "var" keyword in C# now, when should it be used (and, perhaps more importantly, when should it <strong>not</strong> be used). Here is a quick summary on my thoughts...</p>  <p>My personal feeling is that it's a problem if I have to rely on Intellisense in order to be able to tell what type a variable is when it is declared. It's important to keep the future audience in mind while you are writing code (this could be future developers needing to maintain your code, or even yourself years down the road). After all, writing code is the easy part. Reading it (and hence, reverse engineering it to a degree) is the hard part. </p>  <p>So, when you write code that requires another developer to use Intellisense (or go poking around other pieces of code that may be contextual irrelevant) to understand a piece of code, I would contend that you are not writing good code. </p>  <p>This brings us to the var keyword. Good usage? Using it to automatically infer variable types on declaration/instantiation lines of code:</p>  <pre class="csharpcode">var people = <span class="kwrd">new</span> List&lt;People&gt;();
