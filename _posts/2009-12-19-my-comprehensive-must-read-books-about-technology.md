@@ -1,9 +1,6 @@
 ---
-layout: post
 title: "My comprehensive must-read books about technology"
-date: 2009-12-19 22:37:59 -0700
-comments: true
-categories: personal
+tags: [Personal]
 ---
 
 The other day on Twitter, some friends and I were discussing the narrative books we like that are about technology (not technical books themselves). These are books about notable figures in the technology field, about the history of a specific technology, and so on. Here is my list of books that I consider must-reads for those techies out there that like this type of stuff (in no particular order).

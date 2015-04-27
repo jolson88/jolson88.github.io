@@ -1,5 +1,4 @@
 ---
-layout: post
 title: "Windows Store Apps, WASAPI, and Audio Code in C#"
 tags: [Audio, Windows]
 ---
