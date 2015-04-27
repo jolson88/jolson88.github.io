@@ -1,0 +1,55 @@
+---
+layout: post
+title: On the potential abuse of the var keyword
+---
+
+<p>Originally posted on: <a href='http://geekswithblogs.net/jolson/archive/2008/12/14/on-the-potential-abuse-of-the-var-keyword.aspx'>http://geekswithblogs.net/jolson/archive/2008/12/14/on-the-potential-abuse-of-the-var-keyword.aspx</a></p><p>This question/conversation has come up quite often when chatting with friends and other developers. With the introduction of the "var" keyword in C# now, when should it be used (and, perhaps more importantly, when should it <strong>not</strong> be used). Here is a quick summary on my thoughts...</p>  <p>My personal feeling is that it's a problem if I have to rely on Intellisense in order to be able to tell what type a variable is when it is declared. It's important to keep the future audience in mind while you are writing code (this could be future developers needing to maintain your code, or even yourself years down the road). After all, writing code is the easy part. Reading it (and hence, reverse engineering it to a degree) is the hard part. </p>  <p>So, when you write code that requires another developer to use Intellisense (or go poking around other pieces of code that may be contextual irrelevant) to understand a piece of code, I would contend that you are not writing good code. </p>  <p>This brings us to the var keyword. Good usage? Using it to automatically infer variable types on declaration/instantiation lines of code:</p>  <pre class="csharpcode">var people = <span class="kwrd">new</span> List&lt;People&gt;();
+var lookup = <span class="kwrd">new</span> Dictionary&lt;<span class="kwrd">string</span>, SomeType&gt;();</pre>
+
+<p>However, I really don't like when developers use the var keyword on a variable declaration based on the return of a method call. Without Intellisense, how am I supposed to be able to tell what type the variable is?</p>
+
+<pre class="csharpcode"><span class="rem">// This is *bad*, don't do this</span>
+var local = SomeMethod(...);</pre>
+
+<p>How about loop variables? My personal take (though I could go either way) is to not use the var keyword on loops:</p>
+
+<pre class="csharpcode"><span class="rem">// I prefer this</span>
+<span class="kwrd">for</span> (<span class="kwrd">int</span> i = 0; i &lt; 10; i++)
+{
+...
+}
+
+<span class="rem">// over this</span>
+<span class="kwrd">for</span> (var i = 0; i &lt; 10; i++)
+{
+...
+}</pre>
+<style type="text/css"><![CDATA[
+.csharpcode, .csharpcode pre
+{
+	font-size: small;
+	color: black;
+	font-family: consolas, "Courier New", courier, monospace;
+	background-color: #ffffff;
+	/*white-space: pre;*/
+}
+.csharpcode pre { margin: 0em; }
+.csharpcode .rem { color: #008000; }
+.csharpcode .kwrd { color: #0000ff; }
+.csharpcode .str { color: #006080; }
+.csharpcode .op { color: #0000c0; }
+.csharpcode .preproc { color: #cc6633; }
+.csharpcode .asp { background-color: #ffff00; }
+.csharpcode .html { color: #800000; }
+.csharpcode .attr { color: #ff0000; }
+.csharpcode .alt 
+{
+	background-color: #f4f4f4;
+	width: 100%;
+	margin: 0em;
+}
+.csharpcode .lnum { color: #606060; }]]></style>
+
+<p>In general, I think it is important not to be a lazy coder and do something just because it makes it easier on you at the time. As a developer, you need to think about those that will come after you and maintain your code. Don't make it any harder on them than it needs to be. Their jobs are already hard enough.</p>
+
+<p>What are your thoughts? Where do you use the var keyword? Where do you NOT use the var keyword?</p> <img src="http://geekswithblogs.net/jolson/aggbug/127892.aspx" width="1" height="1" />

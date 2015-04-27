@@ -1,0 +1,50 @@
+---
+layout: post
+title: 'LHS Feature Of The Week #10 - Application Recovery and Restart'
+---
+
+<p>
+   Hello everyone, and welcome back to &nbsp;the “Feature Of The Week” newsletter. This
+   week’s newsletter will be short and sweet. We will go over the new Application Recovery
+   and Restart API. The API itself is very small and very simple to use (which, in my
+   opinion, is “A Good Thing” TM). 
+</p>
+<p>
+   <b>What is Application Recovery and Restart?&nbsp; </b>Application Recovery is a set
+   of technologies that give applications the opportunity to control what actions are
+   taken on their behalf by the system when they (the application) fail. 
+<p>
+   If the application registers a callback with the RegisterApplicationRecoveryCallback
+   function, the system will execute the recovery callback on application failure. The
+   application can that take action to do things like attempting to recover documents.
+   If the application has not registered for recovery, the system attempts to diagnose
+   and report the problem. 
+<p>
+   If the application registered a callback with the RegisterApplicationRestart function,
+   the system will automatically restart the application after the recovery or diagnosis
+   is completed. If the application has not registered for restart, the system will simply
+   close the application. 
+<p>
+   <b>Documentation</b> 
+<ul>
+   <li>
+      <a href="http://windowssdk.msdn.microsoft.com/en-us/library/ms714881.aspx">Windows
+      SDK</a>
+   </li>
+   <li>
+      <a href="http://windowssdk.msdn.microsoft.com/en-us/library/ms714885.aspx">RegisterApplicationRecoveryCallback</a>
+   </li>
+   <li>
+      <a href="http://windowssdk.msdn.microsoft.com/en-us/library/ms714886.aspx">RegisterApplicationRestart</a>
+   </li>
+</ul>
+<p>
+   <b>Screencasts</b>
+</p>
+<ul>
+   <li>
+      <a href="http://channel9.msdn.com/Showpost.aspx?postid=256582">Windows Vista Restart
+      &amp; Recovery APIs from Managed Code</a>
+   </li>
+</ul>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=20d415c3-4130-4dce-826c-7124ef1978bf">

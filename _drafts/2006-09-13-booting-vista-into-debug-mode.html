@@ -1,0 +1,24 @@
+---
+layout: post
+title: Booting Vista into Debug Mode
+---
+
+<p>
+   For anyone that has had to boot Windows into debug mode to do some digging around
+   (like remote Kernel Debugging), things have changed. In the past, you could open up
+   boot.ini in the root of the system volume, and add a "/debug" flag to the Windows
+   OS record of choice.
+</p>
+<p>
+   One of the things you might notice with Vista is that boot.ini is now gone, solid
+   gone. So, with boot.ini gone, how do you boot into debug mode?&nbsp;It is done with
+   a new tool called "bcdedit". In the root of the system volume, you'll notice a hidden
+   system directory "Boot" which is the Boot Configuration Data store. So, to turn on
+   Kernel Debugging with Vista, you can now execute "bcdedit /debug on" (be aware, you
+   need to be running the command prompt under an account with Admin privileges). 
+</p>
+<p>
+   If you want to see the load of stuff you can do with bcdedit now, just execute "bcdedit
+   /?". 
+</p>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=7cbaeeaa-7e84-4cc7-8517-bffc33ac55b8">

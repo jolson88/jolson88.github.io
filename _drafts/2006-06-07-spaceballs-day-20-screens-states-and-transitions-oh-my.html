@@ -1,0 +1,55 @@
+---
+layout: post
+title: Spaceballs - Day 20 - Screens, States, and Transitions, Oh My!
+---
+
+ <p>
+   I didn't quite get around to implementing the lives functionality tonight. However,
+   I did do some general cleanup and "paved the road" for me to easily drop in the code
+   for respawning and multiple lives tomorrow.
+</p>
+<p>
+   One of the refactorings I did was to take what I was calling "States" before and change
+   them to "Screens". Really, they were screens. As I needed to start adding states to
+   the gameplay itself (like PlayingState, LostLifeState, etc.), I didn't want to go
+   down the road of making a hierarchical state manager because I felt it would muddle
+   up what was really being done under the hood. I felt that separating out Screens from
+   States would lead to a much more clean implementation.
+</p>
+<p>
+   Rather than states being things like MenuState, PlayState, RecapState, and HighScoreState,
+   those are now MenuScreen, PlayScreen, RecapScreen, and HighScoreScreen. In my mind,
+   that makes it much more clear what they are actually doing. States are now concepts
+   like ReadyToPlayState, PlayingState, LostLifeState, PowerUpState, GameOverState, etc.
+   Once again, I am happy about this change as I am really liking the separation between
+   "Screens" and "States" rather than hacking both concepts into one. The code is not
+   only cleaner, but it will also be much more clear where the functionality I'm about
+   to implement goes. For instance, the multiple lives functionality will simply be transitions
+   from PlayingState to LostLifeState and back to PlayingState. If I add the "countdown"
+   at the beginning of the game (think "Starting in 3... 2... 1.... GO!"), it will simply
+   be starting with ReadyToPlayState and transitioning to PlayingState when appropriate.
+   This will also help break out the code into more manageable chunks as well (which
+   I always like).
+</p>
+<p>
+   On an aside, I think I use Source Control much more than I originally thought. It's
+   only day 20, and I'm already up to revision 61 in SVN (61 commits). Better safe than
+   sorry, I suppose :).
+</p>
+<p>
+   I still don't have any comments to make on Visual C# Express. I still haven't really
+   noticed the difference all that much for my hobbyist development. Anyone out there
+   that wants to get into C# development should _totally_ download Visual C# Express
+   and use that. Besides, you can't beat the price of FREE :). The one thing that I can
+   say is that, in my opinion, the Express products are better than the other free IDEs
+   that are out there today. Usually, you get what you pay for (meaning free can suck
+   tremendously), but not with the Express editions.
+</p>
+<p>
+   That's it for this update. For tomorrow night, I'm going to shoot for implementing
+   multiple lives (a.k.a. LostLifeState) and hopefully get around to implementing the
+   ReadyToPlayState as well to add the countdown to play time. Those shouldn't take too
+   long (hence the reason I'm hoping I can get both of them done tomorrow night). Until
+   then, I'll see you on the flip side :).
+</p>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=9eeaec46-36a6-438d-92ff-2c47b56e195b">

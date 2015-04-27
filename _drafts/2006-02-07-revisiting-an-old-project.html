@@ -1,0 +1,48 @@
+---
+layout: post
+title: 'Revisiting an old project '
+---
+
+<p>
+   Well, I've decided to revisit an <a href="http://www.managed-world.com/BooMTheOneWithTheGameSpec.aspx">old
+   project</a> that I haven't worked on for a while. The project was a game called "Tanks!"
+   that was going to be the basis for a set of articles on game development with Managed
+   DirectX. I'm still doubtful that the articles will make a come back but I definitely
+   want to revive the project, with a twist that is. 
+</p>
+<p>
+   Instead of a flat out Tanks game, I'm going to make it more of a programming game.
+   Think of Terrarium meets Robot Battle (or Mind Rover (choose one)) meets Combat. You
+   will be able to create your own Tanks in .NET that will be run in the game itself.
+   I've been wanting to explore this kind of idea for a while and I think this might
+   server as an idea vehicle (no pun intended) for doing so.
+</p>
+<p>
+   The few of you that attended the talk I gave way back at the Portland Code Camp might
+   remember me talking about the architecture of the engine. Well, that will _radically_
+   change now. I don't know if I've just matured (doubtful) or just have a fresh pair
+   of eyes to look at the problem (more likely), but I've realized that the messaging-based
+   architecture I was using was WAY overkill for the problem. When it comes to the saying
+   "using the right tool for the right job" well, I was using a chainsaw to slice up
+   cucumbers for a salad (and in my opinion it shows). 
+</p>
+<p>
+   For the first version I will be ripping out the physics engine entirely (as I don't
+   think it really helps with the gameplay itself). I will be ripping out the messaging
+   infrastructure. This should not only make it less overkill, but it should make it
+   more approachable for the less experienced programmer as well. It may even be that
+   the first version has just manual controls to control the Tanks as well. So be it
+   :). 
+</p>
+<p>
+   Maybe this time I can bite off a significant less chunk and see it through to at least
+   the first public release (which would be a drastic step up for me (those of you who
+   know me, feel free to shake your head in enthusiastic agreement at this point)). This
+   time around, more unit tests, more integration, more re-use/adoption rather than roll-your-own. 
+</p>
+<p>
+   I think it should be a fun thing. Who knows, maybe I can follow it through to completion
+   with at least programmer art (and I'm sure some of you wouldn't mind since a finished
+   set of articles).
+</p>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=c89babeb-e525-451e-9fe0-47ebfe748344">

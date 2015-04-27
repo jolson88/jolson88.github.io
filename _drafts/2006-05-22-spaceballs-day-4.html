@@ -1,0 +1,50 @@
+---
+layout: post
+title: Spaceballs - Day 4
+---
+
+<p>
+   Well, SDL.NET is completely ripped out. Spaceballs is running entirely on GDI+. Believe
+   it or not, I ended up ripping out the entire Messaging system as well. I'm not entirely
+   sure that it is really even needed for this game. In fact, I think it probably _is_
+   quite overkill. 
+</p>
+<p>
+   It's funny, I always get a tingle when ripping out a bunch of code and making the
+   code a lot simpler. I'm still happy as the components are pretty isolated and are
+   still enabled to be unit tested fairly easily. 
+</p>
+<p>
+   I think that tomorrow I will crank out a quick and dirty Sprite class built directly
+   on a Bitmap and use that for rendering. I only hope that the rotation capabilities
+   of that or significantly better than that of SDL.NET. Once the Sprite class is built,
+   I will hook up the ship into my PlayController. After that, on to one small enemy
+   :).
+</p>
+<p>
+   As for Visual C# Express, I have noticed a couple of things. For one, I wish there
+   were more refactorings than Rename and ExtractMethod. Also, I do wish they would have
+   kept the add-in capabilities enabled. While Jamie Cansdale has done a wonderful job
+   getting TestDriven.NET to work, I have had no end of trouble trying to get "Test With...
+   Debugger" working. Arg!!! It's frustrating enough that I do wish I was in Visual Studio.
+   But that may also be because I like to have my unit tests, darn it :). 
+</p>
+<p>
+   At least after all of this I am only a single day behind schedule. Hopefully I don't
+   run into this again. One thing I have noticed after todays efforts? I'm pleasantly
+   surprised to see how easy GDI+ programming is. 
+</p>
+<p>
+   As much as I feel ashamed to admit it, I've _never_ written a C# game using GDI+.
+   I've always jumped to Managed DirectX (or some pre-packaged library like Irrlicht)
+   and only gotten a fraction into the game development process. I'm starting to get
+   the impression that now that I've chosen GDI+, this whole process should go a bit
+   smoother. My other hope is that this will ultimately make the code a lot more accessible
+   to others out there as a lot of the necessary support architecture that one has to
+   put in place with Managed DirectX is not there.
+</p>
+<p>
+   I'm glad that at this point I'm still having fun. We'll see if that's still true in
+   a week :).&nbsp;
+</p>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=50d3ddfa-fec9-427f-bf64-04effa11f01e">

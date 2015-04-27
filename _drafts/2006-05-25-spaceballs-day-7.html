@@ -1,0 +1,62 @@
+---
+layout: post
+title: Spaceballs - Day 7
+---
+
+<p>
+   Luckily, I was able hit most of my goals for the day. I still have yet to get to collision
+   detection, but that's not that big of a deal as I can whip that up sometime on Friday
+   night or Saturday. I have my ship automatically firing now according to a firing rate
+   and have all controls working through the messaging system. The architecture is starting
+   to shape up a bit and I can see that it is going well.
+</p>
+<p>
+   Next is to add one enemy and get collision detection working. After that is when the
+   fun really starts. I then get to start hooking up the ship's health, number of lives,
+   the scoreboard, various different enemies, etc. Basically, all the fun stuff :).
+</p>
+<p>
+   Perhaps I will post a picture here soon. Just be aware that it is suffering from programmer
+   art something FIERCE. Of course, for the first half of the project, my focus won't
+   be on looks, it will be on gameplay. I want to get the tracer bullet in place as soon
+   as possible.
+</p>
+<p>
+   Back to coding for now :).
+</p>
+<p>
+   ::code, code, code, code::
+</p>
+<p>
+   ::some time later::
+</p>
+<p>
+   More updates. I got some boundary checking finished. The code now checks if bullets
+   have left the field of play. If they have, they are immediately removed from the game.
+   I don't like the way it feels though. I'm thinking of implementing a Wall game object.
+   This way, there will be four Walls that comprise the "field of play". If I go this
+   route, than I can use normal collision detection for boundary checking as well. Basically,
+   if a bullet collides with a wall, remove it from play. Also, if a ship collides with
+   a wall, don't let it go any further. I will feel more comfortable when all this code
+   is using the same collision detection algorithm rather than numerous "special cases".
+   This could also open up some interesting game mechanics (like having a non-rectangular
+   field of play or adding obstructions in the middle of the field of play, etc.).
+</p>
+<p>
+   So after that last coding session, I am exactly where I wanted to be by the end of
+   tonight (and I still have another hour of coding left :)). Maybe I will move on now
+   to writing up the Wall object I talked about above. If I can crank that out real quick-like,
+   I will whip up a CollisionDetectionService that will be used to detect collisions.
+   Then the SpaceballsGame class can determine what collision interactions it needs to
+   deal with (like Bullet -&gt; Wall, Ship -&gt; Wall, etc.). 
+</p>
+<p>
+   If I can get all that finished tonight, I will be ahead of where I was hoping to be
+   at this point&nbsp;in the project (although perhaps not, since I won't have any coding
+   time on Thursday Night, Sunday, or Monday :(). The good news would be that almost
+   everything would be in place to start dropping in enemies and getting them going :).
+</p>
+<p>
+   Until next time, I'll see you on the flip side :). 
+</p>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=acffc4c8-abed-4435-b77f-cba8fe55be97">

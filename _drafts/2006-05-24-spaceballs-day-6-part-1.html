@@ -1,0 +1,46 @@
+---
+layout: post
+title: Spaceballs - Day 6, Part 1
+---
+
+<p>
+   Although I didn't give an update yesterday, I did get some work done. Even though
+   I've had the last several days off of work, I'm sure Chris would feel more comfortable
+   knowing that I haven't been spending my entire days working on Spaceballs (I have
+   a feeling that Chris would only feel truly comfortable if I dropped out of the competition
+   since he knows he's fighting a losing battle). 
+</p>
+<p>
+   My spaceship is all hooked up and working. It drives off the mouse and can rotate
+   both directions just fine. I just finished hooking up the bullets. Now you can hit
+   the spacebar to fire and the bullet will fly in whatever direction the ship is/was
+   facing. 
+</p>
+<p>
+   To limit the sheer number of bullets (and to add another game mechanic), I went ahead
+   and added a firing rate to the ship (or, more specifically, the weapon). If I have
+   the time to implement three different ships like I want to, each one will have a different
+   firing rate to differentiate the behavior and strategies for each different ship type.
+</p>
+<p>
+   Before I move on to hooking up an enemy and getting collision detection working, I
+   need to do some cleanup refactoring. I also need to do some "bulking up" of my infrastructure
+   to make sure that the game continues to be easy to develop. 
+</p>
+<p>
+   After I had removed it earlier, I'm thinking of re-introducing the messaging system
+   since I don't like how coupled my various classes are getting. I'm holding off on
+   that now though as I really don't want to push it too far if it isn't necessary. I
+   figure that I'll actually just continue to push forward and if my coupling becomes
+   worse, then I will revisit the topic. There might be other ways though that I can
+   manage the dependencies and coupling without introducing an entire message system.
+   I'll have to do some more thinking on that.
+</p>
+<p>
+   Well, I'm back off to coding. I'll try to get in another update before I go to bed
+   tonight (hence the "Part 1" in the title :)). I'll feel a lot better about the progress
+   in the game once I get an enemy and collision detection hooked up. I know it's only
+   Day 6, but once an enemy and collision detection is hooked up, I'll be a heck of a
+   lot closer to having an entire tracer bullet hooked up.
+</p>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=189341d1-b7a6-4bd5-a1b2-dfdf077a585e">

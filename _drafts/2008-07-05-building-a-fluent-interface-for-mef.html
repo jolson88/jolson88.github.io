@@ -1,0 +1,267 @@
+---
+layout: post
+title: Building A Fluent Interface for MEF
+---
+
+<p>Originally posted on: <a href='http://geekswithblogs.net/jolson/archive/2008/07/04/building-a-fluent-interface-for-mef.aspx'>http://geekswithblogs.net/jolson/archive/2008/07/04/building-a-fluent-interface-for-mef.aspx</a></p><p>How would you like to use the following way to configure dependencies in MEF? A fluent interface with POCO support (no attributes necessary)? Yup.</p>
+<div class="wlWriterSmartContent" id="scid:812469c5-0cb0-4c63-8c15-c81123a09de7:f28b23e4-5a36-4037-9603-dcc86f1c52b0" style="PADDING-RIGHT: 0px; DISPLAY: inline; PADDING-LEFT: 0px; FLOAT: none; PADDING-BOTTOM: 0px; MARGIN: 0px; PADDING-TOP: 0px"><pre class="c#" name="code">            var resolver = new FluentResolver();
+            resolver.Register&lt;HelloWorld&gt;().
+                And&lt;HelloGreeting&gt;().As&lt;IGreeting&gt;().
+                And&lt;ConsoleOutputter&gt;().As&lt;IOutputter&gt;();
+
+            var domain = new CompositionContainer(resolver);
+
+            // HelloWorld has dependencies on IGreeting and IOutputter
+            var helloWorld = domain.Resolve&lt;HelloWorld&gt;();
+            helloWorld.SaySomething();</pre></div>
+<p>Lately I've been digging more and more into the first CTP of the <a href="http://blogs.msdn.com/kcwalina/archive/2008/06/05/MEFCTP.aspx">Managed Extensibility Framework</a> (MEF) coming out of <a href="http://blogs.msdn.com/kcwalina/">Krzysztof Cwalina</a>'s team here at Microsoft. By default, a developer needs to sprinkle Export and Import attributes in their classes at the point they are needing something to be injected, or on classes that need to be exported in order to be injected into other classes. However, if you don't like this behavior, MEF provides several extension points you can use to provide a different interface into MEF. </p>
+<p>In my "ideal" Dependency Injection interface for MEF, there are several requirements that I would like:</p>
+<ul>
+<li>No Export/Import attributes necessary; hence, support for <a href="http://en.wikipedia.org/wiki/Plain_Old_CLR_Object">POCO</a>s (Plain Ol' CLR Objects) 
+</li><li>Registration of types with container, not registration of object instances (where I would have to create the object myself before adding it's type to the container). 
+</li><li>Simply ask container to resolve a type into an instance for me. Other than the container and resolver, none of my "domain objects" should be "new"-ed up by me. 
+</li><li>No need to tell the CompositionContainer to Bind(). It should know about all the types necessary. 
+</li><li>For "ease of use", I want to configure dependencies via a <a href="http://www.martinfowler.com/bliki/FluentInterface.html">Fluent Interface</a>. </li></ul>
+<p>I'm on a little bit of a <a href="http://www.martinfowler.com/bliki/FluentInterface.html">Fluent Interface</a> kick right now. I admit it. My name is Jason Olson and I'm a Fluent Interface junkie. If I could type emails via a Fluent Interface in code (rather than Outlook), I probably would. My addiction is just... that... bad. </p>
+<p>Before we dig into how we will leverage MEF's extension points, let's just take a quick peek at the classes we are wanting to wire up via the interface shown above:</p>
+<div class="wlWriterSmartContent" id="scid:812469c5-0cb0-4c63-8c15-c81123a09de7:aedd7b53-bd82-4ba1-9c41-bc45e1434659" style="PADDING-RIGHT: 0px; DISPLAY: inline; PADDING-LEFT: 0px; FLOAT: none; PADDING-BOTTOM: 0px; MARGIN: 0px; PADDING-TOP: 0px"><pre class="c#" name="code">    class HelloWorld
+    {
+        public IGreeting Greeting { get; set; }
+        public IOutputter Outputter { get; set; } 
+
+        public void SaySomething()
+        {
+            // Our dependencies above determine where the output
+            // is written to, and what the greeting will be.
+            Outputter.WriteLine(Greeting.Greet());
+        }
+    }
+
+    interface IGreeting
+    {
+        string Greet(); 
+    }
+
+    class HelloGreeting : IGreeting
+    {
+        public string Greet() 
+        {
+            return "Hello Fluent Interface!";
+        }
+    }
+
+    interface IOutputter
+    {
+        void WriteLine(string message); 
+    }
+
+    class ConsoleOutputter : IOutputter
+    {
+        public void WriteLine(string message)
+        {
+            Console.WriteLine(message);
+        }
+    }</pre></div>
+<p>So how do we enable this new behavior? There are two primary MEF extension points we will use, a custom ComponentBinder and a custom ValueResolver. According to the CTP documentation (emphasis mine):</p>
+<blockquote>
+<p><em>"The role of the <strong>ComponentBinder</strong> is to create a <strong>collection of primitives</strong> associated with its component. There is only one ComponentBinder per component. The <strong>CompositionContainer will use the collection of binders</strong> during the bind operation to determine how components need to be wired-up."</em></p></blockquote>
+<p>In this case, "collection of primitives" essentially means the export and imports of the component it is bound to. One of the interesting points to note is that the CompositionContainer uses these ComponentBinders to determine how various components need to be created. So for MEF to determine what the various imports and exports are for wiring up components, it can use our custom ComponentBinder to do so. So while the default ReflectionBinder will generate this information via attribute declarations on the components in question, we can change this behavior if we wish.</p>
+<p>The other extension point we will use is a custom ValueResolver. Once again, according to the CTP documentation (emphasis mine):</p>
+<blockquote>
+<p><em>"A <strong>ValueResolver</strong> allows the <strong>composition container to retrieve components from some sort of repository</strong>. The composition container’s bind operation has the <strong>single goal of satisfying all imports</strong> for all components that were explicitly added to it. During a bind operation, the composition container can query the ValueResolver for exports if it deems it necessary (e.g. no exports currently in the composition container satisfy a specific import, an import is requesting a collection of all available exports, etc.)."</em></p></blockquote>
+<p>To implement these two extension points, we will need two custom classes: FluentResolver and FluentBinder. Our FluentResolver is what we use to build up a map of our dependencies via the fluent interface shown above. When the FluentResolver is then passed into a CompositionContainer, we will go through our dependency map and crank out a bunch of FluentBinders that MEF can then use when needing to create various objects the user is asking for. </p>
+<p>First, our FluentResolver. FluentResolver contains the methods that make up our fluent interface and that will hold the dependency map we are building up. And then we our FluentResolver is hooked up to a CompositionContainer, we will use this "dependency map" in order to build up all the FluentBinder instances that MEF will use to wire up all our dependencies.</p>
+<div class="wlWriterSmartContent" id="scid:812469c5-0cb0-4c63-8c15-c81123a09de7:3e447538-9322-4ed8-9582-815b2c2e4fc3" style="PADDING-RIGHT: 0px; DISPLAY: inline; PADDING-LEFT: 0px; FLOAT: none; PADDING-BOTTOM: 0px; MARGIN: 0px; PADDING-TOP: 0px"><pre class="c#" name="code">    class FluentResolver : ValueResolver, IRegisterChainer
+    {
+        private Type lastRegisteredType;
+        private IDictionary&lt;Type, IList&lt;Type&gt;&gt; exportTypes = new Dictionary&lt;Type, IList&lt;Type&gt;&gt;();
+        private IList&lt;Type&gt; registeredTypes = new List&lt;Type&gt;();
+
+        // The following three methods define our fluent interface
+        // (Register&lt;T&gt;, And&lt;T&gt;, and As&lt;T&gt;).
+        public IRegisterChainer Register&lt;T&gt;() where T : class, new()
+        {
+            if (!exportTypes.ContainsKey(typeof(T)))
+            {
+                exportTypes.Add(typeof(T), new List&lt;Type&gt;());
+            }
+
+            exportTypes[typeof(T)].Add(typeof(T));
+            registeredTypes.Add(typeof(T));
+
+            lastRegisteredType = typeof(T);
+            return this;
+        }
+
+        public IRegisterChainer As&lt;T&gt;() where T: class
+        {
+            // Add exported type to last registered type (the call right
+            // before .As&lt;T&gt;() in the fluent interface). This is used
+            // to register a type as an interface, rather than the
+            // concrete type.
+            exportTypes[lastRegisteredType].Add(typeof(T));
+            return this;
+        }
+
+        public IRegisterChainer And&lt;T&gt;() where T : class, new()
+        {
+            // Just a different way to register so that the fluent
+            // interface is easily readable.
+            return Register&lt;T&gt;();
+        }
+
+        // This is where the "magic" happens. When our container is set (like
+        // when we are passed into the constructor of a container), we will
+        // create all of our custom binders that MEF will then use to wire-up
+        // dependencies.
+        protected override void OnContainerSet()
+        {
+            base.OnContainerSet();
+
+            foreach (var type in registeredTypes)
+            {
+                // An "Import" (read: injected dependency) is defined as any property whose
+                // type is a type that is "exported" from any other registered type
+                var imports = (from pi in type.GetProperties()
+                               from export in exportTypes
+                               where export.Value.Contains(pi.PropertyType)
+                               select pi).Distinct();
+
+                // Export all types our specific type has been asked to export and all the 
+                // properties from above that are dependencies we need to inject.
+                Container.AddBinder(new FluentBinder(type, exportTypes[type], imports.ToList()));
+            }
+            
+            // Since all the dependencies are known from our fluent interface,
+            // automatically bind the container so that the user doesn't have to
+            // call Bind() themselves.
+            Container.Bind();
+        }
+
+        public override CompositionResult&lt;IImportInfo&gt; TryResolveToValue(string name, IEnumerable&lt;string&gt; requiredMetadata)
+        {
+            // Same as TryResolveToValues below, except we just return a
+            // single value, rather than a collection of values.
+            var result = TryResolveToValues(name, requiredMetadata);
+
+            return new CompositionResult&lt;IImportInfo&gt;(result.Succeeded, 
+                result.Issues, 
+                result.Value.First());
+        }
+
+        public override CompositionResult&lt;ImportInfoCollection&gt; TryResolveToValues(string name, IEnumerable&lt;string&gt; requiredMetadata)
+        {
+            // Based on all the custom binders we have created, have
+            // the container get the various dependent components for us.
+            return TryGetContainerLocalImportInfos(name, requiredMetadata);
+        }
+    }</pre></div>
+<p>IRegisterChainer is simply an interface our three fluent methods (Register&lt;T&gt;, And&lt;T&gt;, As&lt;T&gt;) return (and that FluentResolver implements) that allows us to keep on chaining our method calls one after the other, hence enabling our fluent interface.</p>
+<div class="wlWriterSmartContent" id="scid:812469c5-0cb0-4c63-8c15-c81123a09de7:d2946cb0-bcfc-4294-a643-16e8f82483aa" style="PADDING-RIGHT: 0px; DISPLAY: inline; PADDING-LEFT: 0px; FLOAT: none; PADDING-BOTTOM: 0px; MARGIN: 0px; PADDING-TOP: 0px"><pre class="c#" name="code">    interface IRegisterChainer
+    {
+        // Allows registering another dependency into our resolver
+        IRegisterChainer And&lt;T&gt;() where T : class, new();
+
+        // Enables registering a depedency as a specific type (like
+        // an interface) on top of the concrete type it directly implements
+        IRegisterChainer As&lt;T&gt;() where T : class;
+    }</pre></div>
+<p>And now on to our FluentBinder:</p>
+<div class="wlWriterSmartContent" id="scid:812469c5-0cb0-4c63-8c15-c81123a09de7:db9e2443-6a9a-4553-a088-5a17dc872172" style="PADDING-RIGHT: 0px; DISPLAY: inline; PADDING-LEFT: 0px; FLOAT: none; PADDING-BOTTOM: 0px; MARGIN: 0px; PADDING-TOP: 0px"><pre class="c#" name="code">    class FluentBinder : ComponentBinder
+    {
+        // An instance of the type we are the binder for
+        private object instance;
+
+        // The types we export (could be our concrete type, interfaces, etc.)
+        private IList&lt;Type&gt; exports;
+
+        // Our properties that are dependencies needing resolving
+        private IList&lt;PropertyInfo&gt; imports;
+       
+
+        public FluentBinder(Type type, IList&lt;Type&gt; exports, IList&lt;PropertyInfo&gt; imports) 
+        {
+            this.exports = exports;
+            this.imports = imports;
+
+            // In the future, we could use constructor injection here. For now,
+            // just use the default constructor and property injection.
+            instance = type.GetConstructor(new Type[] {}).Invoke(new object[] {});
+        }
+
+
+        public override IEnumerable&lt;string&gt; ExportNames
+        {
+            // Return the name of the Types we are Exporting
+            get { return exports.Select(t =&gt; t.ToString()); }
+        }
+
+        public override CompositionResult Export() 
+        {
+            // Add our object instance into the container for every type
+            // that we are exporting.
+            foreach (var type in exports)
+            {
+                AddValueToContainer(type.ToString(), instance);
+            }
+
+            return new CompositionResult(true, new List&lt;CompositionIssue&gt;());
+        }
+
+        public override IEnumerable&lt;string&gt; ImportNames
+        {
+            // Return the name of the Types we need Imported
+            get { return imports.Select(pi =&gt; pi.PropertyType.ToString()); }
+        }
+
+        public override CompositionResult Import(IEnumerable&lt;string&gt; changedValueNames) 
+        {
+            // Import every property we have that is a dependency
+            foreach(var propertyInfo in imports)
+            {
+                // Inject an instance of the type of our property from the container
+                var component = Container.TryGetBoundValue(propertyInfo.PropertyType.ToString(), 
+                    propertyInfo.PropertyType);
+
+                propertyInfo.SetValue(instance, component.Value, null);
+            }
+
+            return new CompositionResult(true, new List&lt;CompositionIssue&gt;());
+        }
+    }</pre></div>
+<p>This FluentBinder is essentially the heart of the our behavior. We use the the results from our FluentResolver that are passed in to our binder to let MEF know what types we need to import and what types we are exporting from the type FluentBinder is bound to. </p>
+<p>The final thing we need to enable our desired API from above is an extension method to CompositionContainer called Resolve&lt;T&gt;() which we just give the type that we would like an instance of. I just happen to think this thin wrapper around TryGetBoundValue&lt;T&gt;() is easier to use and better to read.</p>
+<div class="wlWriterSmartContent" id="scid:812469c5-0cb0-4c63-8c15-c81123a09de7:6cce3f13-209d-408a-8b36-6169ae467633" style="PADDING-RIGHT: 0px; DISPLAY: inline; PADDING-LEFT: 0px; FLOAT: none; PADDING-BOTTOM: 0px; MARGIN: 0px; PADDING-TOP: 0px"><pre class="c#" name="code">    static class CompositionContainerExtensions
+    {
+        public static T Resolve&lt;T&gt;(this CompositionContainer domain)
+        {
+            return domain.TryGetBoundValue&lt;T&gt;().Value;
+        }
+    }</pre></div>
+<p>And now we can combine all the pieces together to build our sample application:</p>
+<div class="wlWriterSmartContent" id="scid:812469c5-0cb0-4c63-8c15-c81123a09de7:b528de84-1632-43b6-a25b-0647601dd019" style="PADDING-RIGHT: 0px; DISPLAY: inline; PADDING-LEFT: 0px; FLOAT: none; PADDING-BOTTOM: 0px; MARGIN: 0px; PADDING-TOP: 0px"><pre class="c#" name="code">    class Program
+    {
+        static void Main(string[] args)
+        {
+            // Declare dependencies via a fluent interface.
+            // No need for attributes, XML config, or 
+            // registration of instances of objects.
+            var resolver = new FluentResolver();
+            resolver.Register&lt;HelloWorld&gt;().
+                And&lt;HelloGreeting&gt;().As&lt;IGreeting&gt;().
+                And&lt;ConsoleOutputter&gt;().As&lt;IOutputter&gt;();
+
+            // Pass in our custom resolver and have it help
+            // take care of the binding process.
+            var domain = new CompositionContainer(resolver);
+
+            // Ask the container for an instance of a type.
+            var helloWorld = domain.Resolve&lt;HelloWorld&gt;();
+            helloWorld.SaySomething();
+
+            Console.ReadKey(true);
+        }
+    }</pre></div>
+<p>While the fluent interface might be seen as a potential "big departure" from the way MEF works out-of-the-box, you can see that it is very possible (and not too difficult) to change how dependencies are configured with MEF. You might want your configuration in an XML file, in a DSL defined in a map.txt file, in a database (no I don't know why you'd want that :P), etc. And no matter how you want it done, it is possible for you to do so with just a little coding.</p>
+<p>Until next time, Happy Coding!</p>
+<p><em>Obviously, this is just a sample prototype and doesn't have several features necessary in DI containers. So, more reason for me to write some more code :). Also, remember this is built on the first CTP of MEF, so the odds are that it will become out-of-date at a later time.</em></p> <img src="http://geekswithblogs.net/jolson/aggbug/126158.aspx" width="1" height="1" />

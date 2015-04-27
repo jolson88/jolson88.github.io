@@ -1,0 +1,81 @@
+---
+layout: post
+title: Diving into XNA, again
+---
+
+<p>
+   Okay, I admit it, I'm a WoW junkie. I spend WAY too much time in WoW, and not enough
+   time doing the things that actually matter. Well, until recently (hopefully the trend
+   continues). I started diving back into XNA again. Only this time, I'm diving back
+   into it from a 3d perspective, not the 2d route I have always gone before. But why
+   the sudden change?
+</p>
+<p>
+   Two months ago or so, I sent out an idea to an internal XNA discussion list at Microsoft
+   that a bunch of us "hobbyists" should get together every other week just to geek out
+   and do some game development after work. People loved the idea, so a bunch of us have
+   been getting together after work to write some code and show each other what we are
+   doing. Perhaps the coolest part is that since we are doing it in the same building
+   where the XNA team is based out of, several XNA team members have dropped by just
+   to check out what's going on. 
+</p>
+<p>
+   In fact, at the first get together, Mitch Walker and others dropped by. Mitch had
+   an idea about doing a month-long game development contest. So, that game development
+   contest just concluded last Tuesday night. Oh MAN, were there some AWESOME games that
+   people worked on. Me, being a total and utter dork, did not have anything to show.
+   Truth be told, I had been writing next to NO XNA code, so there was literally _nothing_
+   to show. However, seeing some of these great games that were done, I figured it was
+   about time to get back into it again. With how supportive this "user group" (of sorts)
+   has turned out, I look forward to actually participating for a change. 
+</p>
+<p>
+   So I'm back diving into XNA again. Instead of doing the usual 2d programming that
+   I've always done in XNA, I figured it was about time for me to get involved in the
+   3d world. The game I'm going to do uses all the art assets from Spacewars and is going
+   to be a vertical-scrolling shooter (like Ikaruga). Tonight, I decided it was about
+   time to start prototyping the controls out and to make sure I could figure out how
+   to display a 3d model (and show it from the top down).
+</p>
+<p>
+   Here's what the Shox Tonera prototype looks like after this evening:
+</p>
+<p>
+   <a href="http://www.managed-world.com/images/Stressedoutofmymind_12D01/ShoxToneraPrototype3.png"><img style="border-right: 0px; border-top: 0px; border-left: 0px; border-bottom: 0px" height="517" src="http://www.managed-world.com/images/Stressedoutofmymind_12D01/ShoxToneraPrototype_thumb3.png" width="670" border="0"></a>
+</p>
+<p>
+   I know that's not the best resolution, but you can at least see the ship (sort of).
+   When you go left or right, the ship "rolls" to that side. When you go forward or backward,
+   the ship "pitches" towards the direction. This is actually quite easy because the
+   ship is technically in 3d. While the screenshot&nbsp;looks like a 2d game, it's actual
+   3d with the camera up in the air pointed straight down. 
+</p>
+<p>
+   Also, you can see that the playing field is just the middle. I got bounding working
+   so that the ship cannot leave the playing area. That was actually not too hard to
+   do (easier than I thought it would be). I'm using the View and Project matrices to
+   "project" the ship's position in the World into the actual screen coordinates. Then
+   I can used the projected screen coordinates to ensure that the ship will not leave
+   the area the playing area contains. 
+</p>
+<p>
+   For those that are familiar with the Spacewars starter kit, I am just reusing the
+   art assets from that in my own game. I will continue to do this for as long as possible.
+   It definitely saves time. 
+</p>
+<p>
+   The next thing I would like to do is to create the firing action of the ship using
+   Point Sprits for the visuals. Hopefully either tomorrow night or this weekend I will
+   get around to that. I would also like to do some refactoring to clean up the code.
+   Tonight, I just threw it all in the game class for now to see if I could get it working
+   (quite the departure from my usual behavior as any of my friends can attest to). I
+   just need to be very careful not to get too wrapped up in refactoring and architecture
+   like I usually do, because then I won't make _any_ progress on the game. 
+</p>
+<p>
+   So why "Shox Tonera" for the name? Because I'm an unoriginal bastard, that's why.
+   "Shox Tonera" is simply the letters from "XNA Shooter" scrambled up. I personally
+   felt it sounded kind of cool too, so if you disagree, I don't want to hear about it
+   :P.
+</p>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=5b39d85f-56fd-4f90-9924-0b9df0605f6c">

@@ -1,0 +1,69 @@
+---
+layout: post
+title: 'LHS Feature Of The Week #1 - Transactional NTFS'
+---
+
+<p>
+   <strong><font face="Times New Roman" color="#2c3d7e"></font></strong>
+</p>
+<p>
+   Hello everyone, and welcome to the “Feature Of The Week” newsletter. In the Feature
+   Of The Week Newsletter, we visit a new feature coming in Longhorn Server every week.
+   The goal is that these are nice, short, and efficient to minimize the amount of effort
+   required by you, the reader. With every Feature Of The Week, we will provide links
+   to more resources in case you want to spend more time diving into the feature covered. 
+<p>
+   So, sit back, relax, and enjoy the Longhorn Server Feature Of The Week! 
+<p>
+   <b>What is Transactional NTFS? </b>Transactional NTFS is an enhancement to NTFS that
+   allows all file operations on an NTFS file system volume to be performed within the
+   scope of a transaction. This is made possible by a new transaction infrastructure
+   in the kernel that allows operating system services to participate in transactions
+   via the new Kernel Transaction Manager. 
+<p>
+   <b>What scenarios does this enable?</b> Transactional NTFS is also fully capable of
+   communicating with the MS Distributed Transaction Coordinator, meaning that TxF operations
+   can participate in transactions that are leveraging any other Resource Manager that
+   DTC is capable of working with. What does this mean to you? It means that you can
+   now have an application that not only encompasses database calls, but also operations
+   to the file system as well (think of Document Management solutions). With transaction
+   enhancements being made to the new SMB 2.0 protocol, you can also now contain distributed
+   file operations within a transaction as well. 
+<p>
+   <strong>Resources</strong> 
+<ul>
+   <li>
+      Documentation</li>
+   <ul>
+      <li>
+         <a href="http://msdn.microsoft.com/library/default.asp?url=/library/en-us/fileio/fs/portal.asp">Windows
+         SDK</a>
+      </li>
+   </ul>
+   <li>
+      Videos/Webcasts</li>
+   <ul>
+      <li>
+         [Video] <a href="http://channel9.msdn.com/Showpost.aspx?postid=142120">Vista Transactional
+         File System</a>
+      </li>
+      <li>
+         [Webcast] <a href="http://msevents.microsoft.com/CUI/WebCastEventDetails.aspx?EventID=1032294094&amp;EventCategory=5&amp;culture=en-US&amp;CountryCode=US">The
+         Revolutionary Vista TxF Infrastructure</a>
+      </li>
+   </ul>
+   <li>
+      Blogs</li>
+   <ul>
+      <li>
+         <a href="http://www.pluralsight.com/blogs/jimjohn/">Jim Johnson</a>
+      </li>
+      <li>
+         <a href="http://www.managed-world.com">Jason Olson</a>
+      </li>
+   </ul>
+</ul>
+<p>
+   Enjoy!
+</p>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=ee98ab08-6b5a-410e-83c2-40cae05bb6eb">

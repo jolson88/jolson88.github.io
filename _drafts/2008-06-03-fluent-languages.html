@@ -1,0 +1,43 @@
+---
+layout: post
+title: Fluent Languages
+---
+
+<p>Originally posted on: <a href='http://geekswithblogs.net/jolson/archive/2008/06/02/fluent-languages.aspx'>http://geekswithblogs.net/jolson/archive/2008/06/02/fluent-languages.aspx</a></p><p>The first time I saw some talk about this "movement", it was Martin Fowler discussing "<a href="http://www.martinfowler.com/bliki/FluentInterface.html">Fluent Interfaces</a>". </p> <p>An example Martin gives is the idea of time intervals. Here's how one might declare an interval today (in Java):</p> <div class="wlWriterSmartContent" id="scid:812469c5-0cb0-4c63-8c15-c81123a09de7:785782c9-c8b8-44cf-9c45-2d6168899f3c" style="padding-right: 0px; display: inline; padding-left: 0px; float: none; padding-bottom: 0px; margin: 0px; padding-top: 0px"><pre name="code" class="c#:nocontrols">TimePoint fiveOClock, sixOClock;
+...
+TimeInterval meetingTime = new TimeInterval(fiveOClock, sixOClock);</pre></div>
+<p>Here's how one might to do the same with a fluent interface (anybody who writes Ruby code should recognize this type of programming):</p>
+<div class="wlWriterSmartContent" id="scid:812469c5-0cb0-4c63-8c15-c81123a09de7:e3c59b40-5980-4904-a0bb-f2365344c959" style="padding-right: 0px; display: inline; padding-left: 0px; float: none; padding-bottom: 0px; margin: 0px; padding-top: 0px"><pre name="code" class="c#:nocontrols">TimeInterval meetingTime = fiveOClock.until(sixOClock);</pre></div>
+<p><a href="http://www.codinghorror.com/blog/archives/000989.html">Like Jeff Atwood</a>, I haven't exactly been a fan of fluent languages in the past (pre-LINQ). I honestly never saw the point in them (and I thought all the object syntax got in the way of what was being done). My mind has definitely changed though. As of late, you could say I'm on a bit of a "fluent languages kick." </p>
+<p>LINQ, of course, had a play in this, as did the introduction of lambda expressions. But, it was really seeing two specific libraries that started to get me excited about fluent languages: Moq and NInject. When you compare fluent languages to Regular Expressions and SQL, I can imagine how it's hard to understand the benefit. But when you have a library that reads wonderfully out loud and "fits" an existing problem in order to make it easier to understand, I think it's A Great Thing. </p>
+<p>Mocking is a topic I've been pretty passionate about in the past. Even with that passion, there was one thing I didn't like about the libraries back then: breaking changes when refactoring. A lot of mocking frameworks in the pre-.NET 2.0 days were string based. If you wanted to mock an aspect about a method, you put the name of the method in a string and pass that somewhere. Well, the second I renamed that method, BAM!, my unit test would stop passing (of course). Yes, the unit test caught it, but it was still highly annoying. Enter Moq.</p>
+<p>Moq leverages lambda expressions to be able to determine what should be mocked. I think the solution <a href="http://www.clariusconsulting.net/blogs/kzu/archive/2008/03/17/WhydoweneedyetanotherNETmockingframework.aspx">Daniel Cazzulino has used</a> is awesome. Let's look at some Moq code to mock some code:</p>
+<div class="wlWriterSmartContent" id="scid:812469c5-0cb0-4c63-8c15-c81123a09de7:e36df685-e4ef-4cd5-9797-cdf9a25a3b79" style="padding-right: 0px; display: inline; padding-left: 0px; float: none; padding-bottom: 0px; margin: 0px; padding-top: 0px"><pre name="code" class="c#:nocontrols">var mock = new Mock&lt;ILoveThisFramework&gt;();
+
+// WOW! No record/reply weirdness?! :)
+mock.Expect(framework =&gt; framework.ShouldDownload(It.IsAny&lt;Version&gt;()))
+    .Callback((Version version) =&gt; 
+        Console.WriteLine("Someone wanted version {0}!!!", version))
+    .Returns(true)
+    .AtMostOnce();</pre></div>
+<p>I love how this reads. I think the trick behind groking fluent languages is reading them aloud. Go ahead, go back and read that out loud (just ignore the laughing coworkers, we'll get back at them later :P). Not only does this read very well, but if I refactor/rename the "ShouldDownload" method in Visual Studio, the use of that method in my mocking code will be updated as well. </p>
+<p>The other fluent language that got me excited was the work <a href="http://kohari.org/2008/04/01/frameworks-and-the-break-even-point/">Nate Kohari is doing</a> on NInject. Assuming you are familiar with Dependency Injection, the best way to understand NInject is to drive write into code:</p>
+<div class="wlWriterSmartContent" id="scid:812469c5-0cb0-4c63-8c15-c81123a09de7:8ea61a10-a6c8-4c7f-9cd1-5351aff0d56f" style="padding-right: 0px; display: inline; padding-left: 0px; float: none; padding-bottom: 0px; margin: 0px; padding-top: 0px"><pre name="code" class="c#:nocontrols">class Samurai {
+  private IWeapon _weapon;
+
+  [Inject]
+  public Samurai(IWeapon weapon) {
+    _weapon = weapon;
+  }
+
+  public void Attack(string target) {
+    _weapon.Hit(target);
+  }
+}</pre></div>
+<p>So I have my injection point defined in my Samurai class. My Samurai is going to need an IWeapon. So how do we bind these two together with NInject?</p>
+<div class="wlWriterSmartContent" id="scid:812469c5-0cb0-4c63-8c15-c81123a09de7:6d417cc4-6ac5-43eb-a72e-3589e5c3229a" style="padding-right: 0px; display: inline; padding-left: 0px; float: none; padding-bottom: 0px; margin: 0px; padding-top: 0px"><pre name="code" class="c#:nocontrols">Bind&lt;IWeapon&gt;().To&lt;Sword&gt;();</pre></div>
+<p>Once again, read this out loud. It <em>literally</em> reads like "Bind IWeapon to Sword". I just love that (your mileage may vary :P). </p>
+<p>One of the things that bothered me about fluent languages in the past was that people would say "they're so great, they read just like our own language". Well, we've been down that route before, and I definitely wouldn't consider myself a fan of COBOL! So why the love for fluent languages? </p>
+<p>One of the problems with spoken languages when it comes to programming is that spoken languages are very ambiguous and allow many meanings for a single word or phrase. In order to avoid that problem, I think COBOL became too obtuse. To be exact enough for a programming language while being solely "written language"-esque, syntax becomes annoyingly long. </p>
+<p>The reason I like this new trend of fluent languages in .NET is that it introduces the readability of spoken languages while avoiding the obtrusiveness of languages like COBOL. To me, it's like having my cake <strong>and</strong> eating it too.</p>
+<p><em><strong>Geek Fact of the Day</strong>: Do you know the origin of the term "grok"? The term comes from Robert A. Heinlein's book </em><a href="http://en.wikipedia.org/wiki/Stranger_in_a_Strange_Land"><em>Stranger In A Strange Land</em></a><em>.</em></p> <img src="http://geekswithblogs.net/jolson/aggbug/126165.aspx" width="1" height="1" />

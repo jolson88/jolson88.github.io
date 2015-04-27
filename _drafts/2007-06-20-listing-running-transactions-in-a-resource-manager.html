@@ -1,0 +1,506 @@
+---
+layout: post
+title: Listing running transactions in a resource manager
+---
+
+<p>
+</p>
+<p>
+   The more I work with TxF, the more I realize that our (Microsoft's) coverage of certain
+   KTM topics is sorely lacking. One of those areas is around documentation and samples
+   of managing resource managers (important if you are wanting to investigate programatically
+   the running status of a resource manager). 
+<p>
+   Sometimes, being an evangelist can be quite fun (or frustrating) because the documentation
+   leaves something to be desired and you can't run to the internet because the only
+   results you get back or to the documentation on MSDN. And of course, since you're
+   on the cutting searching for the control codes online provides you with two results,
+   both pointing back to MSDN. It becomes doubly "interesting" if you are a managed developer
+   because a large number of management-oriented information for KTM is all done through
+   DeviceIoControl (an API that is NOT fun to try to P/Invoke into, especially using
+   certain control codes). 
+<p>
+   Anyways, that's all beside the point... moving right along. 
+<p>
+   If you are writing an application to monitor TxF (or even building it into your own
+   application), there are some core "things" that you need to do. One of the first ones
+   (and the one I will cover in this post) is to get a list of transactions in a given
+   resource manager. This is done using the <a href="http://msdn2.microsoft.com/en-us/library/aa364603.aspx">FSCTL_TXFS_LIST_TRANSACTIONS</a>&nbsp;control
+   code. 
+<p>
+   What structure is DeviceIoControl passing back to us in this instance? A <a href="http://msdn2.microsoft.com/en-us/library/aa365702.aspx">TXFS_LIST_TRANSACTIONS</a> structure.
+   Looking at this structure, we see two fields: NumberOfTransactions and BufferSizeRequired. 
+   <br>
+   That's nice and all, but where is the information about those transactions? The information
+   is stored in a TXFS_LIST_TRANSACTIONS_ENTRY structure. 
+<p>
+   The trick is that the TXFS_LIST_TRANSACTIONS_ENTRY structure is mentioned nowhere
+   in the documentation for FSCTL_TXFS_LIST_TRANSACTIONS. So how do you get to it? An
+   array of TXFS_LIST_TRANSACTIONS_ENTRY structures are stored in memory after your TXFS_LIST_TRANSACTIONS
+   structure. So assuming you have two running transactions in the given resource manager,
+   you would pass in a pointer to the TXFS_LIST_TRANSACTIONS structure, and here is what
+   the memory would actually look like coming back from DeviceIoControl: 
+<p>
+   <a href="http://www.managed-world.com/images/Listingrunningtransactionsinaresourceman_BD53/MemoryLayout3.png"><img style="border-right: 0px; border-top: 0px; border-left: 0px; border-bottom: 0px" height="189" src="http://www.managed-world.com/images/Listingrunningtransactionsinaresourceman_BD53/MemoryLayout_thumb3.png" width="710" border="0"></a> 
+<p>
+   The impact of this is that you need to allocate enough memory for not only your TXFS_LIST_TRANSACTIONS
+   structure, but the array of TXFS_LIST_TRANSACTIONS_ENTRY structures as well. You might
+   notice a little bit of a "chicken and egg" problem here. If I'm using FSCTL_TXFS_LIST_TRANSACTIONS
+   to retrieve the transactions, how could I know how many entry structures to allocate
+   when I don't know how many transactions there are yet? 
+<p>
+   Well, assuming there are one or more running transactions in the resource manager,
+   you have to call DeviceIoControl with FSCTL_TXFS_LIST_TRANSACTIONS at least twice:
+   once to find out how big of a buffer you need to allocate (read: to calculate how
+   many ENTRY structures to accomodate for), and then another time after allocating the
+   extra memory to have it fill the actual ENTRY structures. 
+<p>
+   Why do I say "at least" twice? Because, between the time we make our first call and
+   the time we make our second call, more transactions could have appeared and we will
+   have to allocate even more memory. A little bit of a "cat and mouse game," I must
+   say. 
+<p>
+   If you are a managed developer, this may sound a bit scary. Don't be scared though,
+   it's not too bad (and I know I at least have fun writing this kind of lower-level
+   code :P). 
+<p>
+   So let's dive right in and look at the code to make this work! 
+<p>
+   In pseudo-code, this is what we have to do: 
+<p>
+   ------------------------<br>
+   while (true)<br>
+   {<br>
+   &nbsp;&nbsp;&nbsp;&nbsp; // Deallocate memory from last loop through this 
+<p>
+   &nbsp;&nbsp;&nbsp;&nbsp; // Allocate memory for transaction list buffer 
+<p>
+   &nbsp;&nbsp;&nbsp;&nbsp; // Call DeviceIoControl with FSCTL_TXFS_LIST_TRANSACTIONS 
+<p>
+   &nbsp;&nbsp;&nbsp;&nbsp; // If DeviceIoControl Succeeded 
+<p>
+   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; // Get list of transaction
+   entries after TXFS_LIST_TRANSACTIONS structure<br>
+   } 
+<p>
+   // Deallocate any remaining memory<br>
+   ------------------------ 
+<p>
+   Not that bad really. So here it is implemented in native code: 
+<p>
+   &nbsp; 
+<div style="font-size: 10pt; background: white; color: black; font-family: consolas">
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;&nbsp;1</span>&nbsp;<span style="color: blue">#include</span> <span style="color: #a31515">&lt;windows.h&gt;</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;&nbsp;2</span>&nbsp;<span style="color: blue">#include</span> <span style="color: #a31515">&lt;tchar.h&gt;</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;&nbsp;3</span>&nbsp;<span style="color: blue">#include</span> <span style="color: #a31515">&lt;stdio.h&gt;</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;&nbsp;4</span>&nbsp;<span style="color: blue">#include</span> <span style="color: #a31515">"Winioctl.h"</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;&nbsp;5</span>&nbsp;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;&nbsp;6</span>&nbsp;<span style="color: blue">int</span> _tmain(<span style="color: blue">int</span> argc,
+      LPTSTR argv)
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;&nbsp;7</span>&nbsp;{
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;&nbsp;8</span>&nbsp;&nbsp;&nbsp;&nbsp;
+      DWORD lastError, bytesReturned;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;&nbsp;9</span>&nbsp;&nbsp;&nbsp;&nbsp;
+      HANDLE rmDirectory;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;10</span>&nbsp;&nbsp;&nbsp;&nbsp; TXFS_LIST_TRANSACTIONS
+      *txList = NULL;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;11</span>&nbsp;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;12</span>&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: green">//
+      Get handle to directory where resource manager resides</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;13</span>&nbsp;&nbsp;&nbsp;&nbsp; rmDirectory
+      = CreateFile(TEXT(<span style="color: #a31515">"C:\\"</span>), 
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;14</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      GENERIC_READ,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;15</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;16</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      NULL,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;17</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      OPEN_EXISTING,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;18</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      FILE_FLAG_BACKUP_SEMANTICS,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;19</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      NULL);
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;20</span>&nbsp;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;21</span>&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: blue">if</span> (rmDirectory
+      != INVALID_HANDLE_VALUE)
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;22</span>&nbsp;&nbsp;&nbsp;&nbsp; {
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;23</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: green">//
+      Get a list of transactions within the given</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;24</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: green">//
+      resource manager</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;25</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      DWORD neededBufferSize = <span style="color: blue">sizeof</span>(TXFS_LIST_TRANSACTIONS);
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;26</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: blue">while</span> (<span style="color: blue">true</span>)
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;27</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      {
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;28</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; <span style="color: green">// Deallocate previously allocated memory
+      if we are back</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;29</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; <span style="color: green">// here after getting back ERROR_MORE_DATA</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;30</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; <span style="color: blue">if</span> (NULL != txList)
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;31</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; {
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;32</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: blue">delete</span>[] (<span style="color: blue">char</span>*)txList;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;33</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; txList = NULL;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;34</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; }
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;35</span>&nbsp;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;36</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; <span style="color: green">// Get the list of running transactions
+      in the RM</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;37</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; txList = (TXFS_LIST_TRANSACTIONS*)<span style="color: blue">new</span> <span style="color: blue">char</span>[neededBufferSize];
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;38</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; <span style="color: blue">if</span> (!DeviceIoControl(rmDirectory,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;39</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; FSCTL_TXFS_LIST_TRANSACTIONS,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;40</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; NULL,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;41</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; 0,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;42</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; txList,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;43</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; neededBufferSize,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;44</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &amp;bytesReturned,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;45</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; NULL))
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;46</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; {
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;47</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: green">// How did we fail?</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;48</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; lastError = GetLastError();
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;49</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: blue">if</span> (lastError
+      == ERROR_MORE_DATA)
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;50</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; {
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;51</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: green">//
+      We need to enlarge the buffer and try again</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;52</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; neededBufferSize = txList-&gt;BufferSizeRequired;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;53</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: blue">continue</span>;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;54</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;55</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: blue">else</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;56</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; {
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;57</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; _tprintf(TEXT(<span style="color: #a31515">"Unhandled
+      exception: %u\n"</span>), lastError);
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;58</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: blue">break</span>;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;59</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;60</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; }
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;61</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; <span style="color: blue">else</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;62</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; {
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;63</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; _tprintf(TEXT(<span style="color: #a31515">"Transaction
+      Count: %u\n\n"</span>), txList-&gt;NumberOfTransactions);
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;64</span>&nbsp;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;65</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: green">// List Tx details</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;66</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; TXFS_LIST_TRANSACTIONS_ENTRY *txEntry;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;67</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; txEntry = (TXFS_LIST_TRANSACTIONS_ENTRY *)((<span style="color: blue">char</span> *)txList
+      + <span style="color: blue">sizeof</span>(TXFS_LIST_TRANSACTIONS));
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;68</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: blue">for</span> (DWORD
+      i = 0; i &lt; txList-&gt;NumberOfTransactions; i++)
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;69</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; {
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;70</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; txEntry += i;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;71</span>&nbsp;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;72</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: green">//
+      Get GUID string</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;73</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; WCHAR szGuid[40];
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;74</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; StringFromGUID2(txEntry-&gt;TransactionId,
+      (WCHAR *)&amp;szGuid, 40);
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;75</span>&nbsp;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;76</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: green">//
+      Print Tx info</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;77</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; _tprintf(TEXT(<span style="color: #a31515">"TX
+      %s: %u\n"</span>), 
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;78</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; szGuid,
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;79</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; txEntry-&gt;TransactionState);
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;80</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; }
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;81</span>&nbsp;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;82</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: blue">break</span>;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;83</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; }
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;84</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      }
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;85</span>&nbsp;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;86</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: green">//
+      Any memory left to deallocate?</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;87</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: blue">if</span> (NULL
+      != txList)
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;88</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      {
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;89</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; <span style="color: blue">delete</span>[] (<span style="color: blue">char</span>*)txList;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;90</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      &nbsp;&nbsp;&nbsp; txList = NULL;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;91</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      }
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;92</span>&nbsp;&nbsp;&nbsp;&nbsp; }
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;93</span>&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: blue">else</span>
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;94</span>&nbsp;&nbsp;&nbsp;&nbsp; {
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;95</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;
+      _tprintf(TEXT(<span style="color: #a31515">"Unable to get valid handle to Resource
+      Manager\n"</span>));
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;96</span>&nbsp;&nbsp;&nbsp;&nbsp; &nbsp;&nbsp;&nbsp; <span style="color: blue">return</span> 1;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;97</span>&nbsp;&nbsp;&nbsp;&nbsp; }
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;98</span>&nbsp;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;&nbsp;99</span>&nbsp;&nbsp;&nbsp;&nbsp; _tprintf(TEXT(<span style="color: #a31515">"\nPress
+      any key to exit...\n"</span>));
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;100</span>&nbsp;&nbsp;&nbsp;&nbsp; getchar();
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;101</span>&nbsp;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;102</span>&nbsp;&nbsp;&nbsp;&nbsp; <span style="color: blue">return</span> 0;
+   </p>
+   <p style="margin: 0px">
+      <span style="color: #2b91af">&nbsp;&nbsp;103</span>&nbsp;}
+   </p>
+</div>
+<p>
+   And that's how you do it. It's not the most fun getting in to DeviceIoControl (unless
+   you're a geek like me and enjoying this kind of stuff), but hopefully with this post
+   out there to help it will be easier to find out how to do this since there is a lack
+   of documentation around this area. 
+<p>
+   In closing, there is some work that needs to be done around making management of kernel-level
+   transactions a lot easier than it is now. In some ways, it is pretty clear that this
+   is still a "1.0" technology. So while you could use the KTM directly for your transaction
+   coordination, I would highly recommend sticking with using DTC for your transaction
+   coordination as it is much more mature from a management perspective (and there are
+   quite a few enhancements with DTC in Vista and Windows Server 2008). 
+</p>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=f4b0aac4-0669-40f7-84d4-39b116c6cdbe">

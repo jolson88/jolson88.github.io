@@ -1,0 +1,86 @@
+---
+layout: post
+title: Spaceballs - Day 6, Part 2
+---
+
+<p>
+   A couple minor changes (or not so minor when it comes to control schemes). Tonight
+   I took some time to play Geometry Wars Evolved for a while (the game Spaceballs is
+   based on) and I came to a decision. 
+</p>
+<p>
+   One of the difficulties is translating the control scheme to the PC as the console
+   gamepad has the two joysticks that are both used to control the ship in Geometry Wars.
+   As of earlier today, I was using a combination of the mouse and the keyboard (nearly
+   Quake-style controls). You "dragged" the ship around with the mouse and turned where
+   it was facing using the A and D keys. After trying it out for a while (and going back
+   to play Geometry Wars), I realized that it felt unnatural and was not very intuitive.
+   I have changed it to flying the ship forward using the W key, and flying backwards
+   using the S key (full-blow Quake-style control scheme now). 
+</p>
+<p>
+   With this change I realized that I needed zero mouse support for my game, so I had
+   the pleasure of ripping all that code out (have I mentioned the sick twisted pleasure
+   I get ripping code out of a code base?). It wasn't much code to rip out, but it still
+   gave me a pleasure :). I saw in an earlier posts of Chris that he was considering
+   support a Gamepad. That is a fabulous idea and I might need to steal the idea (Chris,
+   you want to check out XInput now, I believe, not Direct Input). Heck, I have an extra
+   360 controller lying around from Microsoft Meltdown so I might just have to put it
+   to use here. I will save that until the end though because I don't want to get hung
+   up on a feature that is only "a nice to have" and not "a must have".
+</p>
+<p>
+   I had talked about it earlier, and after much internal debate, I have decided to re-introduce
+   the messaging and tasking system. However, I am only re-introducing a much simplified
+   model. It won't be nearly as complex or as feature complete as I am only going to
+   add the bare necessities this time around. Once those are finished, I will change
+   my ship to fire continuously like Geometry Wars (rather than based on an input command).
+   Hrmph, even as I'm typing this I'm still having an internal debate about whether to
+   go forward with this. Perhaps that is a sign that I still haven't quite decided yet
+   and the back of my brain wants to work some additional things out. Oh well! I'm not
+   going to let that hold me up from making more progress. Back to coding.....
+</p>
+<p>
+   ::code, code, code, code::
+</p>
+<p>
+   ::two hours later::
+</p>
+<p>
+   Sidetracked!! I ended up re-working my keyboard handling since I wasn't happy with
+   it (it was quite *hackish*). That is all fixed, and I did some "cleanup on aisle 7"-style
+   refactorings (nothing too big). I went ahead and converted the ship controls to be
+   completely keyboard driven. It feels a lot better, but it's still not as comfortable
+   as I would like it. It will work for now though.
+</p>
+<p>
+   Tomorrow I will probably whip up a quick Vector2D class (if I was using DirectX, I
+   could just use the one that is built in). I will move all location/velocity values
+   over to be Vector2D rather than PointF (I'm really getting tired of this ".X"/".Y"
+   crap everywhere rather than using simple Vector-based math). Once I get that in place,
+   I might go ahead and add a "slowdown" feature of controlling the ship where it will
+   slow down after you let up the key rather than stopping right away. 
+</p>
+<p>
+   My hope is that once I get some of these architectural issues settled, hooking up
+   enemies, collision detection, scoring, etc. should be pretty easy. At least the technical
+   aspect should be easy, there would still be the fun part of writing the AI :). So
+   far, I'm making progress though. 
+</p>
+<p>
+   My goal for tomorrow is to have the Messaging and Task subsystems hooked in and working
+   by the end of the day. I would also like to get the GameObjectRepository hooked up
+   and doing some rudimentary boundary checking (like destroying game objects (like bullets)
+   when they leave the playing area). Once the GameObjectRepository is working, adding
+   some easy collision detection (I probably won't do per-pixel at this time and will
+   settle simply for bounding volume checking) shouldn't take that long. 
+</p>
+<p>
+   Anyways, time for sleep :).
+</p>
+<p>
+   P.S. Minor Annoyance #2 with VCS Express - The limited debugging features. Visual
+   Studio's debugging capabilities in the IDE seem much more robust (like forcing the
+   code execution to a specific line (aka "going back in time")), etc. 
+</p>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=ae19d2dc-c0db-44af-b58b-ecec848ff6f2">

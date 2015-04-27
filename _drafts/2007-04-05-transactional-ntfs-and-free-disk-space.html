@@ -1,0 +1,53 @@
+---
+layout: post
+title: Transactional NTFS and Free Disk Space
+---
+
+<p>
+   <a href="http://www.andrewdothay.net/default.aspx">Andrew</a> recently watched <a href="http://channel9.msdn.com/shows/Developer_Meet_Server">my
+   screencasts</a> and had some great questions that came up around how Transactional
+   NTFS behaves with the file system. So, I figured I would answer them here. So, if
+   you want to see the context around his questions, <a href="http://www.andrewdothay.net/PermaLink,guid,7edd54c5-41af-46ea-958e-ec2c26432115.aspx">check
+   out his post</a>. 
+</p>
+<p>
+   Here's the paragraph with the questions:
+</p>
+<blockquote> 
+<p>
+   I wonder what happens to files that never get committed - ala a long running transaction.
+   They have to be taking up file space. Jason says not even Windows Explorer knows about
+   them, but they have to exist somewhere. What if they overflow? Is there a way to clean
+   house? If the poop is invisible, does it still stink?
+</p>
+</blockquote> 
+<p>
+   Great observations and questions Andrew! In the case of a long running, open transaction,
+   the files will exist on the disk. Hence, they are certainly taking up space on the
+   disk. If you have 256 MB of free space on your disk, and try to write 257 MB of data
+   to the disk within a transaction, you will get an "out of space" error like you would
+   outside of a transaction. 
+</p>
+<p>
+   Is there a way to clean house? Yes, rollback or commit the transaction. On rollback,
+   any changes made within the transaction are rolled back, and then consequently removed
+   form the disk. 
+</p>
+<p>
+   But what if my server crashes in the middle of a transaction. Would I have turds floating
+   around the file system? No, you would not. When an NTFS-formatted volume is mounted
+   in Vista or Windows Server "Longhorn", any transactions that are "in-doubt" (the transaction
+   manager is no longer around and we have no clue on the status of the transaction)
+   will be rolled back automatically, effectively removing all the changes from disk.
+   So, in that sense, you would not have any file turds you have to clean up after a
+   system crash (like you would have if you were doing a "temp file -&gt; rename" type
+   of methodology. 
+</p>
+<p>
+   Now, as is usual in transaction systems, you have to be _very_ aware and _very_ cautious
+   of long-running transactions as it could cause some long-term problems that you don't
+   want to deal with. So, there certainly are scenarios where Transactional NTFS just
+   is not a good fit. As tends to be the case with all technology, make sure you are
+   using the right tool for the right job :).
+</p>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=d1f8eabb-1e00-4924-8f57-9bda0fdac6af">

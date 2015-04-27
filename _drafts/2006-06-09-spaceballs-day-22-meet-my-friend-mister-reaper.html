@@ -1,0 +1,60 @@
+---
+layout: post
+title: Spaceballs - Day 22 - Meet My Friend Mister Reaper
+---
+
+ <p>
+   I know I was shooting to get the lives system implemented last night, but I wasn't
+   able to do so because I needed to fill out a bunch of paperwork and do some general
+   catch up on some other tasks (non game-development related, that is). So tonight was
+   my first opportunity to work on Spaceballs since Tuesday night.
+</p>
+<p>
+   I'm proud to say that not only did I get done what I was shooting for (multiple lives
+   for the player as well as the "Get Ready, Set, Go!" countdown at the beginning), I
+   also got done a lot more. I love the feeling of being very productive because the
+   architecture and framework just enables you to be productive :). With the way I had
+   implemented my state management (combined with existence of my new Task Manager),
+   I was able to finish the GameOverState as well as add a death animation for when the
+   player dies. I also added a bunch of prompts throughout play and stuff. What a great
+   feeling!
+</p>
+<p>
+   Now with lives, respawning, death, death animation, game over, etc. all implemented,
+   the functionality and flow of the gameplay is _literally_ feature complete now (must
+   haves + nice to haves). Now I can move on to adding the new enemies, power ups, and
+   such (read: all the fun stuff). I find myself getting more and more confident with
+   each coding session (of getting something fun and complete done by the deadline, not
+   of winning (especially with all the other fun games being done)).
+</p>
+<p>
+   I do have some cleanup left to do after tonight's coding session. This just involves
+   creating a quick UI component that can be re-shared between the various GameStates
+   I have for the Scoreboard area (Score + Lives + Prompt/Possible Message To User).
+   That should take almost no time at all. Perhaps after that I will do a release of
+   the binaries and source for all of you to download (maybe tomorrow night?). Regardless,
+   sharing code and binaries is very easy for me since I have a script that automates
+   the cleanup of the source code, generation of release notes, and creation of the zip
+   files for me.
+</p>
+<p>
+   Once I'm able to do that, I'm hoping that starting tomorrow night and ending sometime
+   Saturday, I can create and finish a HomingSpaceball (charges after the ship wherever
+   you go) and a WanderingSpaceball (moves in random directions). If I'm able to get
+   those done, I would like to extend the HomingSpaceball to break up into four smaller
+   spaceballs when it is destroyed. That should add some more fun to the game.
+</p>
+<p>
+   Now, in the miraculous case that I'm able to get all that done this weekend, I will
+   move on to adding a new weapon (which will require me to finally create a new Weapon
+   class and change my firing mechanism around a bit (once again, shouldn't take that
+   long)) that you will automatically upgrade to at 10k points. When that is finished,
+   the next step will be adding bombs to the player's arsenal that will destroy all spaceballs
+   that are in play when it is dropped. Holy cow, if I could get all that done (even
+   by next Tuesday or Wednesday), I would _REALLY_ be cooking along toward my goal. Perhaps
+   then I could start doing some play testing.
+</p>
+<p>
+   Until next time, that's how the cookie crumbles :).
+</p>
+<img width="0" height="0" src="http://www.managed-world.com/aggbug.ashx?id=0185d954-9a1b-40b7-9976-bfdeaf4402f6">
