@@ -59,14 +59,17 @@ For example, to implement a very simple desaturation effect to make a video comp
 {% endhighlight %}
 
 #### Overlays
-TODO
+Another common scenario when working with video is to add overlays. By supporting overlays, we can very easily overlay video on video, photo on video, photo on photo, etc. We can even implement other features like transitions between videos. 
 
-TODO (Image of overlays)
+With Windows 10, we didn't want to limit it to just a single overlay either. So we give you full control over the number of overlays you can add, how they are grouped, and even how they are rendered. If we want to overlay four videos painted in ellipses over another video, you can do (just for starters): 
 
-> A **custom video compositor** is a class that implements the IVideoCompositor interface and is passed to an overlay layer. TODO
+![Several videos overlayed using ellipses on a base video]({{ site.baseurl }}/images/posts/simple-overlays.png)
 
-So let's say we want to create a simple custom video compositor. Similar to effects, implementing a custom video compositor is all about implementing the one interface: IVideoCompositor. TODO
+Out of the box, MediaComposition uses a very basic video compositor that allows you to specify the location of the overlay and an opacity. MediaComposition then composes each frame using simple alpha-blending. Where the power of overlays really starts to shine is when you start implementing your own custom video compositors. 
 
+> A **custom video compositor** is a class that implements the IVideoCompositor interface and is passed to an overlay layer. Via the CompositeFrame method, the media pipeline gives the custom video compositor all the overlays that need to be composed into the final composite frame. The compositor gives the resulting frame back to the media pipeline in which it is used in the rest of the pipeline.
+
+So let's say we want to create a simple custom video compositor. Similar to effects, implementing a custom video compositor is all about implementing a single interface: IVideoCompositor. To see how simple the CompositeFrame method is to implement, let's see how we would overlay our videos as a brush using simple ellipse shapes.
 
 {% highlight c# linenos %}
     
