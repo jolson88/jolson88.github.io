@@ -1,7 +1,11 @@
 ---
+layout: post
 title: Creative Video Experiences with the Universal Windows Platform
-tags: [Programming,Windows]
+excerpt: "Looking at new creative video experiences that we will be shipping in Winodws 10"
+tags: [programming,windows]
+comments: true
 ---
+
 I'm excited that //build is finally here! It means that I can finally come out and share what I've been up to over the last year. My partner-in-crime Bala Sivakumar and I presented a talk at //build called ["A studio in the palm of your hand: Developing audio and video creation apps for Windows 10"](http://channel9.msdn.com/events/Build/2015/3-634) that should be available on Channel 9 in the coming days.
 
 As a creative person, I love that I have devices always within my reach. It means that whenever and wherever inspiration hits, I can capture it easily before the muse leaves me. But for the best experience, I need great creative apps that I can use to capture that inspiration. But building these apps on Windows previously has taken a lot of effort, and even more domain knowledge when working with our APIs. In Windows 10, we take care of many of the moving pieces so app developers can focus on the features that will keep their users coming back for more and more.
@@ -31,31 +35,29 @@ One of the things I enjoy most about these interfaces is that the two fundamenta
 For example, to implement a very simple desaturation effect to make a video completely desaturated, we can do the bulk of the graphics code in just a couple of lines of C# code (all graphics-accelerated of course!):
 
 {% highlight c# linenos %}
-    
-    public void ProcessFrame(ProcessVideoFrameContext context)
+public void ProcessFrame(ProcessVideoFrameContext context)
+{
+    using (var inputBitmap = CanvasBitmap.CreateFromDirect3D11Surface(                             
+                                  _canvasDevice,
+                                  context.InputFrame.Direct3DSurface))
+    using (var renderTarget = CanvasRenderTarget.CreateFromDirect3D11Surface(
+                                  _canvasDevice,
+                                  context.OutputFrame.Direct3DSurface))
+    using (var ds = renderTarget.CreateDrawingSession())
     {
-        using (var inputBitmap = CanvasBitmap.CreateFromDirect3D11Surface(                             
-                                      _canvasDevice,
-                                      context.InputFrame.Direct3DSurface))
-        using (var renderTarget = CanvasRenderTarget.CreateFromDirect3D11Surface(
-                                      _canvasDevice,
-                                      context.OutputFrame.Direct3DSurface))
-        using (var ds = renderTarget.CreateDrawingSession())
+        var saturation = new SaturationEffect()
         {
-            var saturation = new SaturationEffect()
-            {
-                Source = inputBitmap,
-                Saturation = 0.0f
-            };
-            ds.DrawImage(saturation);
-        }
+            Source = inputBitmap,
+            Saturation = 0.0f
+        };
+        ds.DrawImage(saturation);
     }
+}
 
-    public void SetEncodingProperties(VideoEncodingProperties encodingProperties, IDirect3DDevice device)
-    {
-        _canvasDevice = CanvasDevice.CreateFromDirect3D11Device(device, CanvasDebugLevel.Error);
-    }
-    
+public void SetEncodingProperties(VideoEncodingProperties encodingProperties, IDirect3DDevice device)
+{
+    _canvasDevice = CanvasDevice.CreateFromDirect3D11Device(device, CanvasDebugLevel.Error);
+}
 {% endhighlight %}
 
 #### Overlays
@@ -63,7 +65,10 @@ Another common scenario when working with video is to add overlays. By supportin
 
 With Windows 10, we didn't want to limit it to just a single overlay either. So we give you full control over the number of overlays you can add, how they are grouped, and even how they are rendered. If we want to overlay four videos painted in ellipses over another video, you can do (just for starters): 
 
-![Several videos overlayed using ellipses on a base video]({{ site.baseurl }}/images/posts/simple-overlays.png)
+<figure>
+    <img src="{{ site.url }}{{ site.baseurl }}/images/posts/simple-overlays.png">
+    <figcaption>Four videos overlayed as ellipses</figcaption>
+</figure>
 
 Out of the box, MediaComposition uses a very basic video compositor that allows you to specify the location of the overlay and an opacity. MediaComposition then composes each frame using simple alpha-blending. Where the power of overlays really starts to shine is when you start implementing your own custom video compositors. 
 
