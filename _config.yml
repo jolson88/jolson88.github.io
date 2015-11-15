@@ -1,61 +1,82 @@
+# Site wide configuration
 title:            Coding Coda
-description:      A musical programmer's journey through the creative
-disqus_shortname: codingcoda
+locale:           en_US
 url:              http://codingcoda.com
+baseurl:          
 
-image:
-  feature:        header-1.jpg 
-  credit:         leventep
-  creditlink:     http://leventep.deviantart.com/art/abstract-painting-3-421241074
 
-# Owner/author information
-owner:
-  name:           Jason Olson
-  avatar:         avatar.jpg
-  bio:            "Program Manager on Creative Media Experiences in the Operating System Group at MSFT."
-  email:          jolson88@outlook.com
-  # Social networking links used in footer. Update and remove as you like.
-  twitter:       jolson88 
-  facebook:      jason.olson 
-  github:        jolson88 
-  stackexchange:  
-  linkedin:       
-  instagram:      
-  flickr:         
-  tumblr:         
-  # google plus id, include the '+', eg +mmistakes
-  google_plus:    
-
-# Analytics and webmaster tools stuff goes here
-google_analytics: UA-12141067-1  
-#google_verify:      
-# https://ssl.bing.com/webmaster/configure/verify/ownership Option 2 content= goes here
-#bing_verify:         
-
+# Jekyll configuration
+lsi:         false
+permalink:   /posts/:year/:month/:day/:title/ 
+markdown:    kramdown
 highlighter: pygments
-gems:
-  - jekyll-sitemap
 sass:
   sass_dir: _sass
   style: compressed
-
-permalink:   /blog/:year/:month/:day/:title/
-
-# Amount of post to show on home page
-paginate: 5
+gems:
+  - jekyll-sitemap
 
 kramdown:
-  use_coderay: true
+  auto_ids: true
+  footnote_nr: 1
+  entity_output: as_char
+  toc_levels: 1..6
+  use_coderay: false
 
-  coderay:
-    coderay_line_numbers: nil
-    coderay_css: class
 
+# Default values
 defaults:
   -
     scope:
-      path: "" # All files
+      path: ""
+    values:
+      image:
+        feature: header.jpg
+        credit: leventep
+        creditlink: http://leventep.deviantart.com/art/abstract-painting-3-421241074
+  -
+    scope:
+      path: ""
+      type: "posts"
     values:
       layout: "post"
+      tags: [programming]
+      comments: true
 
-exclude: ["Gemfile", "Gemfile.lock", "README.md", "LICENSE"]
+
+# Owner Information
+owner:
+  name: Jason Olson
+  avatar: bio-photo.jpg
+  bio: "Musician, programmer, husband, and father of two. Full stack developer at Concur. Former PM and Evangelist at Microsoft."
+  email:
+  disqus-shortname: codingcoda
+  rss: http://feeds.feedburner.com/CodingCoda 
+  twitter: jolson88
+  facebook: jason.olson
+  google:
+    plus: #username
+    analytics: UA-12141067-1
+    verify:
+    ad-client:
+    ad-slot:
+  bing-verify:
+  github: jolson88
+  stackoverflow: 5418/jason-olson #123456/username   from a "http://stackoverflow.com/users/123456/username" link
+  linkedin: jolson88
+  xing: #username
+  instagram: #username
+  lastfm: #username
+  tumblr: #username
+  pinterest: #username
+  foursquare: #username
+  steam: #username
+  dribbble: #username
+  youtube: #username
+  soundcloud: jason-olson
+  weibo: #username
+  flickr: #username
+  codepen: #username
+
+include: [".htaccess"]
+exclude: ["lib", "config.rb", "Capfile", "config", "log", "Rakefile", "Rakefile.rb", "tmp", "less", "*.sublime-project", "*.sublime-workspace", "test", "spec", "Gruntfile.js", "package.json", "node_modules", "Gemfile", "Gemfile.lock", "LICENSE", "README.md"]

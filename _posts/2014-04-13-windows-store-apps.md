@@ -1,6 +1,8 @@
 ---
+layout: post
 title: "Windows Store Apps, WASAPI, and Audio Code in C#"
-tags: [Audio, Windows]
+tags: [audio, windows]
+comments: true
 ---
 In my recent talk at //Build ([Sequencers, Synthesizers, and Software, Oh My!](https://channel9.msdn.com/Events/Build/2014/3-548)), 
 I showed how WASAPI could be used to create low-latency audio apps
