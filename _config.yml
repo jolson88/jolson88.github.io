@@ -6,7 +6,7 @@ baseurl:
 
 
 # Jekyll configuration
-lsi:         false
+lsi:         true
 permalink:   /posts/:year/:month/:day/:title/ 
 markdown:    kramdown
 highlighter: pygments
