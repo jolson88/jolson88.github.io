@@ -1,9 +1,6 @@
 ---
-layout: post
 title: Creative Video Experiences with the Universal Windows Platform
-excerpt: "Looking at new creative video experiences that we will be shipping in Winodws 10"
-tags: [programming,windows]
-comments: true
+excerpt: "Looking at new creative video experiences that we will be shipping in Windows 10"
 ---
 
 I'm excited that //build is finally here! It means that I can finally come out and share what I've been up to over the last year. My partner-in-crime Bala Sivakumar and I presented a talk at //build called ["A studio in the palm of your hand: Developing audio and video creation apps for Windows 10"](http://channel9.msdn.com/events/Build/2015/3-634) that should be available on Channel 9 in the coming days.
@@ -34,7 +31,7 @@ One of the things I enjoy most about these interfaces is that the two fundamenta
 
 For example, to implement a very simple desaturation effect to make a video completely desaturated, we can do the bulk of the graphics code in just a couple of lines of C# code (all graphics-accelerated of course!):
 
-{% highlight c# linenos %}
+{% highlight c# %}
 public void ProcessFrame(ProcessVideoFrameContext context)
 {
     using (var inputBitmap = CanvasBitmap.CreateFromDirect3D11Surface(                             
@@ -76,38 +73,36 @@ Out of the box, MediaComposition uses a very basic video compositor that allows 
 
 So let's say we want to create a simple custom video compositor. Similar to effects, implementing a custom video compositor is all about implementing a single interface: IVideoCompositor. To see how simple the CompositeFrame method is to implement, let's see how we would overlay our videos as a brush using simple ellipse shapes.
 
-{% highlight c# linenos %}
-    
-    public void CompositeFrame(CompositeVideoFrameContext context)
+{% highlight c# %}
+public void CompositeFrame(CompositeVideoFrameContext context)
+{
+    var outputSurface = context.OutputFrame.Direct3DSurface;
+    using (var renderTarget = CanvasRenderTarget.CreateFromDirect3D11Surface(_canvasDevice, outputSurface))
+    using (var drawSession = renderTarget.CreateDrawingSession())
     {
-        var outputSurface = context.OutputFrame.Direct3DSurface;
-        using (var renderTarget = CanvasRenderTarget.CreateFromDirect3D11Surface(_canvasDevice, outputSurface))
-        using (var drawSession = renderTarget.CreateDrawingSession())
+        foreach(var overlaySurface in context.SurfacesToOverlay)
         {
-            foreach(var overlaySurface in context.SurfacesToOverlay)
+            var overlay = context.GetOverlayForSurface(overlaySurface);
+            var width = (float)overlay.Position.Width;
+            var height = (float)overlay.Position.Height;
+            using (var overlayBitmap = CanvasBitmap.CreateFromDirect3D11Surface(_canvasDevice, overlaySurface))
+            using (var videoBrush = new CanvasImageBrush(_canvasDevice, overlayBitmap))
             {
-                var overlay = context.GetOverlayForSurface(overlaySurface);
-                var width = (float)overlay.Position.Width;
-                var height = (float)overlay.Position.Height;
-                using (var overlayBitmap = CanvasBitmap.CreateFromDirect3D11Surface(_canvasDevice, overlaySurface))
-                using (var videoBrush = new CanvasImageBrush(_canvasDevice, overlayBitmap))
-                {
-                    var scale = width / overlay.Clip.GetVideoEncodingProperties().Width;
-                    videoBrush.Transform = CreateScalingAndTransformMatrix(scale, (float)overlay.Position.X, (float)overlay.Position.Y);
-                    drawSession.FillEllipse(new Vector2((float)overlay.Position.X + width / 2, (float)overlay.Position.Y + height / 2), width / 2, height / 2, videoBrush);
-                }
+                var scale = width / overlay.Clip.GetVideoEncodingProperties().Width;
+                videoBrush.Transform = CreateScalingAndTransformMatrix(scale, (float)overlay.Position.X, (float)overlay.Position.Y);
+                drawSession.FillEllipse(new Vector2((float)overlay.Position.X + width / 2, (float)overlay.Position.Y + height / 2), width / 2, height / 2, videoBrush);
             }
-    
-            drawSession.DrawText("Happy\nBirthday!", new Vector2(_backgroundProperties.Width / 1.5f, 100), Windows.UI.Colors.CornflowerBlue, new CanvasTextFormat()
-            {
-                FontSize = (float)_backgroundProperties.Width / 13,
-                FontWeight = new FontWeight() { Weight = 999 },
-                HorizontalAlignment = CanvasHorizontalAlignment.Center,
-                VerticalAlignment = CanvasVerticalAlignment.Center
-            });
         }
+    
+        drawSession.DrawText("Happy\nBirthday!", new Vector2(_backgroundProperties.Width / 1.5f, 100), Windows.UI.Colors.CornflowerBlue, new CanvasTextFormat()
+        {
+            FontSize = (float)_backgroundProperties.Width / 13,
+            FontWeight = new FontWeight() { Weight = 999 },
+            HorizontalAlignment = CanvasHorizontalAlignment.Center,
+            VerticalAlignment = CanvasVerticalAlignment.Center
+        });
     }
-
+}
 {% endhighlight %}
 
 That's not all you can do with custom video compositors though. You can easily animate different overlays together, implement your own custom transitions, and much much more. 

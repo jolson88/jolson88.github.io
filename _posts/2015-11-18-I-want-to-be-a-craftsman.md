@@ -1,9 +1,6 @@
 ---
-layout: post
 title: I admit, I want to be a Craftsman
 excerpt: "Developers have long discussed and debated whether programming is an art, a science, an engineering practice, or something else. I don't believe in Black and White. I think programming means different things for different people. And programming fulfills different expectations depending on use..."
-tags: [programming,personal]
-comments: true
 ---
 Developers have long discussed and debated whether programming is an art, a science, an engineering practice, or something else. I don't believe in Blacks and Whites. I think programming means different things to different people. And programming fulfills different expectations depending on its use.
 
