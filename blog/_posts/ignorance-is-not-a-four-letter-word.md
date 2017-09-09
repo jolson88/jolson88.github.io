@@ -35,7 +35,7 @@ As an inventor, Edison made 1,000 unsuccessful attempts at inventing the light b
 
 We might feel compelled to cover up our mistakes. We may not want the people we respect and admire to see our mistakes. "What will people think?" "Maybe the company will realize I can't actually do this job and they'll finally fire me." 
 
-[Impostor syndrome](https://en.wikipedia.org/wiki/Impostor_syndrome) is "a concept describing individuals who are marked by an inability to internalize their accomplishments and a persistent fear of being exposed as a 'fraud'." I'll admit it right now, I often suffer from imposter syndrome. So do many other developers I know. Making mistakes can form a feedback loop, enhancing our imposter syndrome in the process. But why?
+[Impostor syndrome](https://en.wikipedia.org/wiki/Impostor_syndrome) is "a concept describing individuals who are marked by an inability to internalize their accomplishments and a persistent fear of being exposed as a 'fraud'." I'll admit it right now, I often suffer from imposter syndrome. So do many other developers I know. Making mistakes can form a negative feedback loop, enhancing our imposter syndrome in the process. But why?
 
 I think at the end of the day, we view making mistakes as bad because we fail to realize that making mistakes is a great way to learn. We associate making mistakes with a lack of talent. Perhaps we think "if only I were smarter, I wouldn't be making these mistakes."
 
@@ -43,13 +43,21 @@ It's extremely difficult to get over this self-bias. But when living with a Grow
 
 >>> "I've failed over and over and over again in my life and that is why I succeed" - Michael Jordan
 
-# Self-Limiting: Point Blaming
-TODO
-	- Pointing-Blame. Not wanting to be "the one at fault", so blaming others for failures.
+# Self-Limiting: Blaming Others
+When we find ourselves living in a world where making mistakes is bad, we tend not to want to be the one making them. When mistakes are made, we easily fall into a behavior of blaming others. After all, perhaps we secretly want others to believe that we are too smart or too talented to have made that mistake. This is especially true the smaller or "sillier" the mistake is. Combine a silly mistake with a large negative impact and you will see plenty of finger pointing happening. It's hard to admit that we can be one of the people pointing fingers.
+
+A problem though is that this behavior is self-defeating. Blaming others is ultimately a behavior that [dimishes trust] that others have in you. Avoiding taking responsibility for our own actions can also exhibit itself in a pattern "half-truths, use spin, avoidance, and weasel words." 
+
+Remember, mistakes are not bad. Every mistake is an opportunity to learn and to grow. And by being honest with ourselves and with others when we make mistakes, we will start down a path of rebuilding the trust that others have with us.
 
 # Self-Limiting: Lack of Sharing
-	- Lack of blogging and sharing of experiences
-		- "Rocket scientist Robert Goddard found his ideas bitterly rejected by his scientific peers on the grounds that rocket propulsion would not work in the rarefied atmosphere of outer space"
+When we are living in a culture dominated by a fixed mindset, there becomes a growing desire to look smart or to not be viewed as "dumb" as we discussed above. This impacts our career directly because we find ourselves sensoring ourselves. We don't share our experiences or lessons learned because we think others don't care or that it won't be useful to anybody else. After all, "What value could I possibly be providing that so many other people haven't already provided?"
+
+I have struggled with this for years. Even now, writing this blog post, I feel like I have something I want to say but I have a part of myself that questions putting it out there. I started blogging [all the way back in 2003](http://geekswithblogs.net/jolson/archive/2003/11/11/511.aspx). Those first several years, I was a carefree blogger. I was just doing it for fun. But the more I shared, the more I self-sensored myself. The more I became aware of the community around me, the less I wanted to write. I started talking myself out of sharing because I felt like each post would expose me and show others that I don't have anything to add.
+
+Let me say this now, no matter **what** state you are in your career, there is *somebody* out there that could learn from your experiences and you could help. My favorite example of this is [Iris Classon](http://irisclasson.com/category/not-so-stupid-questions/). I think she is brave beyond belief for the way she started her career in this industry. She put herself out there while she was learning. And you know what? I think she had a very positive impact on the community because of it. We need more of this behavior. We need to hear the learning experiences of others.
+
+It doesn't matter whether it's blogging, whether it's speaking at technical conferences, or sharing source code. It doesn't matter if you just started programming yesterday, or if you've been programming for 20 years. Everybody can provide value. Be yourself and put yourself out there. Don't worry about others. You are learning. And your own mistakes can help others learn too. And that's A Great Thing.
 
 Now that's a lot of crappy and no-fun stuff to stem from an over-arching fear of ignorance, or approaching ignorance as A Bad Thing. But it doesn't only impact us individually or as a community, it also directly impacts the companies we work at.
 
