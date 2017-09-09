@@ -17,15 +17,18 @@ It's hard to have an open mind and be willing to learn from somebody if we feel 
 # Community: Ignorance is Not Bliss (a.k.a The Desire To Look Smart / The Fear of Looking Dumb)
 Going hand-in-hand with the above, there is a lot of peer pressure to look smart in this industry. We want the respect of our peers. We don't want to admit we don't know something and then look dumb in the process. Some communities even self-identify as "the smart kids" or others talk-down to "the more simple-minded folk." This behavior only serves to perpetuate a fixed mindset.
 
-# Community: Judgying By Behavior (a.k.a. Aggressive Criticism of Others)
-Building on the theme again, thinking with a fixed mindset contributes to our insecurities having built-in defense mechanisms that serve to tear down others and their ideas. TODO
-	- Aggressive criticism of other teams, solutions, etc. (Judging By Behavior)
-		- "We judge ourselves by our intentions and others by their behaviour." - Stephen Covey
-		- Invalidation or criticism of other people's ideas (e.g. because "your idea" is better)
+# Community: Aggressive Criticism of Others
+Building on the theme again, thinking with a fixed mindset contributes to our insecurities having built-in defense mechanisms that serve to tear down others and their ideas. It's routine in the community to see people aggressively criticize others or their solutions.
 
-	- Pointing-Blame. Not wanting to be "the one at fault", so blaming others for failures.
+>>> "We judge ourselves by our intentions and others by their behavior." - Stephen Covey
 
-But the impact of viewing ignorance as bad not only impacts our larger software industry, it can also impact us all individually in ways we may not even realize. 
+We judge other people and teams by their behavior, not their intentions. If there is a change made, people will immediately criticize the change rather than looking beyond it to the intention of the change. Software is a game of gives and takes. Solutions aren't black and white. Deciding on a solution is all about trade-offs.
+
+Without looking beyond actions into the intentions of the actions, it's all too easy to think that your solution is ultimately better. Many people immediately feel the need to point out their own solutions and why they are far superior. This vitriolic behavior is viral, it spreads throughout the community and permeates our culture.
+
+We need more empathy. We need to realize that other people being successful does not somehow invalidate our own goodness. Discovering the intentions behind software decisions allows us to learn about ways of viewing the world or problem space that we may not have known before. It's not about talent or being smart, it's about being willing to learn.
+
+The impact of viewing ignorance as bad is not only impacting our software communities either. It also impacts us all individually, in ways we may not even realize. 
 
 # Self-Limiting: Mistakes Are Bad
 As an inventor, Edison made 1,000 unsuccessful attempts at inventing the light bulb. When a reporter asked, "How did it feel to fail 1,000 times?" Edison replied, "**I didn’t fail 1,000 times. The light bulb was an invention with 1,000 steps.**" Henry Ford, R. H. Macy, and many other business pioneers failed many times before they succeeded. But somehow we end up at the belief that Mistakes Are Bad.
@@ -39,6 +42,10 @@ I think at the end of the day, we view making mistakes as bad because we fail to
 It's extremely difficult to get over this self-bias. But when living with a Growth Mindset, we start to realize that each mistake we make is an opportunity to learn. And that's A Good Thing.
 
 >>> "I've failed over and over and over again in my life and that is why I succeed" - Michael Jordan
+
+# Self-Limiting: Point Blaming
+TODO
+	- Pointing-Blame. Not wanting to be "the one at fault", so blaming others for failures.
 
 # Self-Limiting: Lack of Sharing
 	- Lack of blogging and sharing of experiences
