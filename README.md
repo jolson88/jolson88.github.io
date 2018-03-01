@@ -1,6 +1,7 @@
-# Coding Coda
-This is a temporary blog for local offline working on blog posts.
+# Blog
 
-## Usage
-Just run `bundle exec jekyll serve`
+## Development
+Run locally with `bundle exec jekyll serve`.
 
+Build site with `bundle exec jekyll build`. This publishes to a sister directory called site which is 
+bound a the github pages repository. Commit those changes and the site is published.
