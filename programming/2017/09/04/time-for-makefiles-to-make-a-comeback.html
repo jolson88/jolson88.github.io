@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>It&#39;s time for makefiles to make a comeback</title>
+  <meta name="description" content="Make and makefiles are lost in the past for many developers, its advantages lost in the stream of tools that are constantly reinventing the wheel of building...">
+
+  
+  
+  <link rel="stylesheet" href="http://jolson88.com/assets/style.css">
+
+  <link rel="canonical" href="http://jolson88.com/programming/2017/09/04/time-for-makefiles-to-make-a-comeback.html">
+  <link rel="alternate" type="application/rss+xml" title="jolson88" href="http://jolson88.com/feed.xml">
+
+  <script async defer src="https://buttons.github.io/buttons.js"></script>
+</head>
+
+
+  <body>
+
+    <header class="border-bottom-thick px-2 clearfix">
+  <div class="left sm-width-full py-1 mt-1 mt-lg-0">
+    <a class="align-middle link-primary text-accent" href="/">
+      jolson88
+    </a>
+  </div>
+  <div class="right sm-width-full">
+    <ul class="list-reset mt-lg-1 mb-2 mb-lg-1">
+      
+        
+      
+        
+        <li class="inline-block">
+          <a class="align-middle link-primary mr-2 mr-lg-0 ml-lg-2" href="/about/">
+            About
+          </a>
+        </li>
+        
+      
+        
+      
+        
+      
+        
+      
+    </ul>
+  </div>
+</header>
+
+
+    <div>
+      <article class="container px-2 mx-auto mb4" itemscope itemtype="http://schema.org/BlogPosting">
+  <h1 class="h0 col-9 sm-width-full py-4 mt-3 inline-block" itemprop="name headline">It's time for makefiles to make a comeback</h1>
+  <div class="col-4 sm-width-full mt-1 border-top-thin ">
+    <p class="mb-3 py-2 bold h4"><time datetime="2017-09-04T00:00:00-07:00" itemprop="datePublished">Sep 4, 2017</time></p>
+  </div>
+
+  <div class="prose" itemprop="articleBody">
+      <p>Make and makefiles are lost in the past for many developers, its advantages lost in the stream of tools that are constantly reinventing the wheel of building software. It’s time we get off that crazy carousel.</p>
+
+<p>If you ask many developers the first thing that comes to mind with Make and makefiles, you will likely get several answers: C/C++, native projects, huge, archaic, or perhaps even old. Some younger developers that have grown up in the JavaScript ecosystem may not have even heard of Make and don’t realize the advantages they could harvest by using an existing, well-proven, and stable tool. Do we really need to be learning a new task runner or build system every 18 months as JavaScript frameworks come and go?</p>
+
+<blockquote>
+  <p>Those who do not understand Unix are condemned to reinvent it, poorly.</p>
+
+  <p>Usenet signature, November 1987
+ — Henry Spencer</p>
+</blockquote>
+
+<h1 id="what-does-this-have-to-do-with-modern-javascript-development">What does this have to do with modern JavaScript development?</h1>
+
+<p>It’s not uncommon for larger JavaScript-based projects today to use a language that compiles down to JavaScript, either for powerful language features or for stronger type checking. We use Browserify to package all our JavaScript modules together into a bundle to allow front-end developers to have a more composition-based developer experience through modules (like back-end developers have in Node.js). We use LESS or SASS and compile out to CSS the browser can understand. We minimize our JavaScript to make the files smaller, resulting in faster downloads and page load times.</p>
+
+<p>What do all these things have in common with each other? At their core, they are each about taking a set of input files and transforming them into a set of output files. And this is exactly what Make is so incredibly good at.</p>
+
+<p>What do makefiles do? Makefiles are simply a declarative way to transform one file (or series of files) into another. That’s it, it’s that simple. It’s not specific to C, C++, or even to programming languages. You could just as easily use a makefile to transform markdown documentation into shipped HTML files, or to pack important files into a zip/tar archive, or do a myriad of other transformations.</p>
+
+<p>Thanks to its declarative nature and implementation, Make is able to use makefiles to only run the bare transforms needed to reach the final destination format. If a source file hasn’t changed since the last transformation, the source file doesn’t have to be processed again. In larger projects, this is a huge win to speed and a boon to the developer experience.</p>
+
+<p>Make first appeared over 40 years ago and a lot of software has been built with it since that time. It’s a battle-tested and stable piece of software that excels at exactly what it was meant to do: transforming files from a source format to a target format, with a very simple and easy-to-understand mechanism for declaring dependencies. It’s all text-based, doesn’t try to solve everything itself, and has a great integration experience through calling out to shell scripts. In other words, it is very Unix-like. This is hardly surprising given it’s birth within the Unix environment.</p>
+
+<p>Some developers have had experiences with very complicated and convoluted makefiles in larger projects. But it doesn’t need to be that way. In fact, it can be quite simple to build an NPM package that is implemented in Typescript (from building the source code to packaging the NPM package):</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PATH :<span class="o">=</span> node_modules/.bin:<span class="k">$(</span>PATH<span class="k">)</span>
+
+source_files    :<span class="o">=</span> <span class="k">$(</span>wildcard lib/<span class="k">*</span>.ts<span class="k">)</span>
+build_files     :<span class="o">=</span> <span class="k">$(</span>source_files:lib/%.ts<span class="o">=</span>dist/%.js<span class="k">)</span>
+PACKAGE         :<span class="o">=</span> build/my-package-1.0.0.tgz
+
+.PHONY: all
+
+all: <span class="k">$(</span>PACKAGE<span class="k">)</span>
+
+<span class="k">$(</span>build_files<span class="k">)</span>: <span class="k">$(</span>source_files<span class="k">)</span> package.json
+    npm i
+    tsc
+
+<span class="k">$(</span>PACKAGE<span class="k">)</span>: <span class="k">$(</span>build_files<span class="k">)</span> .npmignore
+    @mkdir <span class="nt">-p</span> <span class="k">$(</span><span class="nb">dir</span> <span class="nv">$@</span><span class="k">)</span>
+    @cd <span class="k">$(</span><span class="nb">dir</span> <span class="nv">$@</span><span class="k">)</span> <span class="o">&amp;&amp;</span> npm pack <span class="k">$(</span>CURDIR<span class="k">)</span>
+</code></pre></div></div>
+
+<p>Yes, the above example was for building a very small project. But just because the project becomes larger, doesn’t mean the user experience of Make diminishes. Let’s look at an example.</p>
+
+<p>At work, I’m currently working on a larger project that is based on AWS Kinesis and Lambda Functions, a stream-processing system architecture that is serverless. The “service” is based out of one git repository for convenience. But we want easily accessible shared libraries between our different Lambda handlers that can also be independently deployed projects. This makes deploying fixes or new functionality into production much quicker and with much less overhead than deploying the entire service as one large monolith.</p>
+
+<p>Our project structure is inspired by a post by StrongLoop on creating a modular Node.js project structure. Even though we are using TypeScript, this structure still definitely applies to us. So we started with the linking and npm scripts approach outlined in the blog post.</p>
+
+<p>Our project structure ended up looking like this in the abstract:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- src
+    |- lib
+        |- foo
+            |- dist
+                |- *.js (compiled JavaScript files)
+            |- lib
+                |- *.ts
+            |- package.json
+            |- makefile
+        |- bar
+            |- package.json
+            |- makefile
+        |- baz
+            |- package.json
+            |- makefile
+    |- handlers
+        |- alpha (depends on foo and bar)
+            |- package.json
+            |- makefile
+        |- omega (depends on bar and baz)
+            |- package.json
+            |- makefile
+- package.json
+- makefile
+</code></pre></div></div>
+
+<p>But as the number of modules grew and the different ordering of dependencies started cropping up (as they do in larger Enterprise software), this approach quickly became unwieldy and painful. We found ourselves with a whole mix of preinstall, postinstall, and prestart scripts. It was very difficult to understand what was happening at build time to bootstrap the service. And integrating new sub-projects was a pain. It was also a “build everything or nothing” type of solution without us putting in a non-trivial amount of extra work.</p>
+
+<p>Before grabbing the latest build hotness like Gulp off the shelf, we decided to take a look at what Make could do for this since it’s an established tool and this is right up its alley. That decision is what kicked off my growing appreciation of Make (and inspired this blog post).</p>
+
+<p>Being a larger and growing project, we were naturally concerned about whether our build solution would scale. I happen to think that using Make, it most definitely does. And other than the Make quirks you get used to after you first use it for a while, I think that a junior developer could integrate their own libraries into this Make process.</p>
+
+<p>Here’s what a potential makefile for the above project would look like:</p>
+
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>deps_install    :<span class="o">=</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/build/last-install-time
+pkg_lib_foo     :<span class="o">=</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/build/foo-1.0.0.tgz
+pkg_lib_bar     :<span class="o">=</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/build/bar-1.0.0.tgz
+pkg_lib_baz     :<span class="o">=</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/build/baz-1.0.0.tgz
+pkg_alpha       :<span class="o">=</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/build/alpha-1.0.0.tgz
+pkg_omega       :<span class="o">=</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/build/omega-1.0.0.tgz
+
+.PHONY: all handlers libs
+
+all: libs handlers
+
+handlers: <span class="k">$(</span>deps_install<span class="k">)</span>
+    <span class="k">$(</span>MAKE<span class="k">)</span> <span class="nt">-C</span> src/handlers/alpha
+    <span class="k">$(</span>MAKE<span class="k">)</span> <span class="nt">-C</span> src/handlers/omega
+
+libs:
+    <span class="k">$(</span>MAKE<span class="k">)</span> <span class="nt">-C</span> src/lib/foo
+    <span class="k">$(</span>MAKE<span class="k">)</span> <span class="nt">-C</span> src/lib/bar
+    <span class="k">$(</span>MAKE<span class="k">)</span> <span class="nt">-C</span> src/lib/baz
+
+<span class="k">$(</span>deps_install<span class="k">)</span>: <span class="k">$(</span>pkg_lib_foo<span class="k">)</span> <span class="k">$(</span>pkg_lib_bar<span class="k">)</span> <span class="k">$(</span>pkg_lib_baz<span class="k">)</span>
+    @if <span class="o">[</span> <span class="s2">"</span><span class="k">$(</span>pkg_lib_foo<span class="k">)</span><span class="s2">"</span> <span class="o">=</span> <span class="s2">"</span><span class="k">$(</span>findstring <span class="k">$(</span>pkg_lib_foo<span class="k">)</span>,<span class="nv">$?</span><span class="k">)</span><span class="s2">"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span> <span class="se">\</span>
+        <span class="nb">cd</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/src/handlers/alpha <span class="o">&amp;&amp;</span> npm i <span class="k">$(</span>pkg_lib_foo<span class="k">)</span><span class="p">;</span> <span class="se">\</span>
+    <span class="k">fi</span>
+    @if <span class="o">[</span> <span class="s2">"</span><span class="k">$(</span>pkg_lib_bar<span class="k">)</span><span class="s2">"</span> <span class="o">=</span> <span class="s2">"</span><span class="k">$(</span>findstring <span class="k">$(</span>pkg_lib_bar<span class="k">)</span>,<span class="nv">$?</span><span class="k">)</span><span class="s2">"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span> <span class="se">\</span>
+        <span class="nb">cd</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/src/handlers/alpha <span class="o">&amp;&amp;</span> npm i <span class="k">$(</span>pkg_lib_bar<span class="k">)</span><span class="p">;</span> <span class="se">\</span>
+        <span class="nb">cd</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/src/handlers/omega <span class="o">&amp;&amp;</span> npm i <span class="k">$(</span>pkg_lib_bar<span class="k">)</span><span class="p">;</span> <span class="se">\</span>
+    <span class="k">fi</span>
+    @if <span class="o">[</span> <span class="s2">"</span><span class="k">$(</span>pkg_lib_baz<span class="k">)</span><span class="s2">"</span> <span class="o">=</span> <span class="s2">"</span><span class="k">$(</span>findstring <span class="k">$(</span>pkg_lib_baz<span class="k">)</span>,<span class="nv">$?</span><span class="k">)</span><span class="s2">"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span> <span class="se">\</span>
+        <span class="nb">cd</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/src/handlers/omega <span class="o">&amp;&amp;</span> npm i <span class="k">$(</span>pkg_lib_baz<span class="k">)</span><span class="p">;</span> <span class="se">\</span>
+    <span class="k">fi</span>
+    @touch <span class="k">$(</span>deps_install<span class="k">)</span>
+
+</code></pre></div></div>
+
+<p>As you can see, it doesn’t need to be incredibly complicated. As this is a back-end service, we don’t have browserify, less, or minification. But it should help paint the picture that even with those additions, it should be pretty straightforward.</p>
+
+<p>If you make a change to the baz library, only baz is rebuilt and only baz is re-installed into the omega handler sub-project. Throw a watcher on this process (e.g. an npm script like watch ‘npm run build’ src — wait=5) and your build process becomes more rich and improves the local development experience.</p>
+
+<h1 id="the-upsides">The Upsides</h1>
+
+<p>One thing I really like about this is that things only run if they need to. You don’t even need an incremental compiler to make it possible. If source files haven’t been updated, there is no need to regenerate the target files. Make knows this by comparing the last modified times of the source files compared to the target files. You can see the easy integration into existing tools like tsc and npm. I didn’t need to wait until a wrapper was created (or to create my own wrapper) in a code-based build tool.</p>
+
+<p>Another less obvious benefit when comparing Make with code-based build tools like Grunt or Gulp is being declarative vs. imperative. You get to focus on the end result (declaring what needs to be done) instead of focusing on how the actual work is done.</p>
+
+<p>Make is also a standalone tool, so there is no need to bring in a bunch of other code dependencies like code-based task runners do. This not only makes the user experience better, but it also means there are fewer ways the software can break (e.g. a new version of a dependency that breaks functionality in the core tool).</p>
+
+<h1 id="the-downsides">The Downsides</h1>
+
+<p>Yes, it’s another tool and language that developers need to learn. But that’s what we get paid to do as developers, right? We always need to be learning new tools and techniques (or re-learning old tools and techniques in this case :P). We accept this forever-learning experience as the latest-and-greatest programming languages or software libraries roll out every month.</p>
+
+<p>But remember, in this case, we are learning a general tool that we will be to leverage in many different ways for a long time. Alton Brown need not worry, this tool is very much a multi-tasker. Make has been around for over 40 years and it’s not going anywhere anytime soon. Can we say the same about Grunt, Gulp, or the next Task Runner du jour?</p>
+
+<p>An accurate concern of using Make historically has been the lack of decent support on Windows. By leveraging Make, you were potentially making life more difficult for all your Windows users. That was a non-starter for many projects. But with the recent addition of Linux support in Windows and the ongoing change of heart under Satya Nadella’s leadership at Microsoft, this concern is hopefully a relic of the past. With all the great stuff to be learned from and used in Linux, I feel this trend is a major boon to software developers.</p>
+
+<p>Now is a great time to learn Make
+So today is a great time to learn and start leveraging Make and makefiles. They are still very much relevant to our work today as developers. There’s no need for an ever-revolving door of task runners du jour. Don’t succumb to the build tool treadmill and burn yourself out. Learn a powerful tool you will be able to leverage for a long time and isn’t going anywhere any time soon.</p>
+
+<p>Yes, it’s time for Makefiles to make a comeback! Let’s do this!</p>
+
+  </div>
+
+</article>
+
+<div class="container mx-auto px-2 py-2 clearfix">
+  <!-- Use if you want to show previous and next for all posts. -->
+
+
+
+  
+  <div class="col-4 sm-width-full left mt-3">
+    <a class="no-underline border-top-thin py-1 block" href="http://jolson88.com/growth/2017/09/09/ignorance-not-four-letter-word.html">
+      <span class="h5 bold text-accent">Next</span>
+      <p class="bold h3 link-primary mb-1">Ignorance is not a four-letter word!</p>
+      <p>> Individuals who believe their talents can be developed (through hard work, good strategies, and input from others) have a...</p>
+    </a>
+  </div>
+
+
+</div>
+
+    </div>
+
+    <div class="border-top-thin clearfix mt-2 mt-lg-4">
+  <div class="container mx-auto px-2">
+    <p class="col-8 sm-width-full left py-2 mb-0">This project is maintained by <a class="text-accent" href="https://github.com/jolson88">jolson88</a></p>
+    <ul class="list-reset right clearfix sm-width-full py-2 mb-2 mb-lg-0">
+      <li class="inline-block mr-1">
+        <a href="https://twitter.com/share" class="twitter-share-button" data-hashtags="jolson88">Tweet</a> <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+'://platform.twitter.com/widgets.js';fjs.parentNode.insertBefore(js,fjs);}}(document, 'script', 'twitter-wjs');</script>
+      </li>
+      <li class="inline-block">
+        <a class="github-button" href="https://github.com/jolson88/" data-icon="octicon-star" data-count-href="jolson88//stargazers" data-count-api="/repos/jolson88/#stargazers_count" data-count-aria-label="# stargazers on GitHub" aria-label="Star jolson88/ on GitHub">Star</a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+
+  </body>
+
+</html>
