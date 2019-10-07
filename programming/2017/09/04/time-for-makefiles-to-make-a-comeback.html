@@ -103,23 +103,23 @@
 
 <p>Some developers have had experiences with very complicated and convoluted makefiles in larger projects. But it doesn’t need to be that way. In fact, it can be quite simple to build an NPM package that is implemented in Typescript (from building the source code to packaging the NPM package):</p>
 
-<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PATH :<span class="o">=</span> node_modules/.bin:<span class="k">$(</span>PATH<span class="k">)</span>
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>PATH :<span class="o">=</span> node_modules/.bin:<span class="si">$(</span>PATH<span class="si">)</span>
 
-source_files    :<span class="o">=</span> <span class="k">$(</span>wildcard lib/<span class="k">*</span>.ts<span class="k">)</span>
-build_files     :<span class="o">=</span> <span class="k">$(</span>source_files:lib/%.ts<span class="o">=</span>dist/%.js<span class="k">)</span>
+source_files    :<span class="o">=</span> <span class="si">$(</span>wildcard lib/<span class="k">*</span>.ts<span class="si">)</span>
+build_files     :<span class="o">=</span> <span class="si">$(</span>source_files:lib/%.ts<span class="o">=</span>dist/%.js<span class="si">)</span>
 PACKAGE         :<span class="o">=</span> build/my-package-1.0.0.tgz
 
 .PHONY: all
 
-all: <span class="k">$(</span>PACKAGE<span class="k">)</span>
+all: <span class="si">$(</span>PACKAGE<span class="si">)</span>
 
-<span class="k">$(</span>build_files<span class="k">)</span>: <span class="k">$(</span>source_files<span class="k">)</span> package.json
+<span class="si">$(</span>build_files<span class="si">)</span>: <span class="si">$(</span>source_files<span class="si">)</span> package.json
     npm i
     tsc
 
-<span class="k">$(</span>PACKAGE<span class="k">)</span>: <span class="k">$(</span>build_files<span class="k">)</span> .npmignore
-    @mkdir <span class="nt">-p</span> <span class="k">$(</span><span class="nb">dir</span> <span class="nv">$@</span><span class="k">)</span>
-    @cd <span class="k">$(</span><span class="nb">dir</span> <span class="nv">$@</span><span class="k">)</span> <span class="o">&amp;&amp;</span> npm pack <span class="k">$(</span>CURDIR<span class="k">)</span>
+<span class="si">$(</span>PACKAGE<span class="si">)</span>: <span class="si">$(</span>build_files<span class="si">)</span> .npmignore
+    @mkdir <span class="nt">-p</span> <span class="si">$(</span><span class="nb">dir</span> <span class="nv">$@</span><span class="si">)</span>
+    @cd <span class="si">$(</span><span class="nb">dir</span> <span class="nv">$@</span><span class="si">)</span> <span class="o">&amp;&amp;</span> npm pack <span class="si">$(</span>CURDIR<span class="si">)</span>
 </code></pre></div></div>
 
 <p>Yes, the above example was for building a very small project. But just because the project becomes larger, doesn’t mean the user experience of Make diminishes. Let’s look at an example.</p>
@@ -164,38 +164,38 @@ all: <span class="k">$(</span>PACKAGE<span class="k">)</span>
 
 <p>Here’s what a potential makefile for the above project would look like:</p>
 
-<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>deps_install    :<span class="o">=</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/build/last-install-time
-pkg_lib_foo     :<span class="o">=</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/build/foo-1.0.0.tgz
-pkg_lib_bar     :<span class="o">=</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/build/bar-1.0.0.tgz
-pkg_lib_baz     :<span class="o">=</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/build/baz-1.0.0.tgz
-pkg_alpha       :<span class="o">=</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/build/alpha-1.0.0.tgz
-pkg_omega       :<span class="o">=</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/build/omega-1.0.0.tgz
+<div class="language-sh highlighter-rouge"><div class="highlight"><pre class="highlight"><code>deps_install    :<span class="o">=</span> <span class="si">$(</span>CURDIR<span class="si">)</span>/build/last-install-time
+pkg_lib_foo     :<span class="o">=</span> <span class="si">$(</span>CURDIR<span class="si">)</span>/build/foo-1.0.0.tgz
+pkg_lib_bar     :<span class="o">=</span> <span class="si">$(</span>CURDIR<span class="si">)</span>/build/bar-1.0.0.tgz
+pkg_lib_baz     :<span class="o">=</span> <span class="si">$(</span>CURDIR<span class="si">)</span>/build/baz-1.0.0.tgz
+pkg_alpha       :<span class="o">=</span> <span class="si">$(</span>CURDIR<span class="si">)</span>/build/alpha-1.0.0.tgz
+pkg_omega       :<span class="o">=</span> <span class="si">$(</span>CURDIR<span class="si">)</span>/build/omega-1.0.0.tgz
 
 .PHONY: all handlers libs
 
 all: libs handlers
 
-handlers: <span class="k">$(</span>deps_install<span class="k">)</span>
-    <span class="k">$(</span>MAKE<span class="k">)</span> <span class="nt">-C</span> src/handlers/alpha
-    <span class="k">$(</span>MAKE<span class="k">)</span> <span class="nt">-C</span> src/handlers/omega
+handlers: <span class="si">$(</span>deps_install<span class="si">)</span>
+    <span class="si">$(</span>MAKE<span class="si">)</span> <span class="nt">-C</span> src/handlers/alpha
+    <span class="si">$(</span>MAKE<span class="si">)</span> <span class="nt">-C</span> src/handlers/omega
 
 libs:
-    <span class="k">$(</span>MAKE<span class="k">)</span> <span class="nt">-C</span> src/lib/foo
-    <span class="k">$(</span>MAKE<span class="k">)</span> <span class="nt">-C</span> src/lib/bar
-    <span class="k">$(</span>MAKE<span class="k">)</span> <span class="nt">-C</span> src/lib/baz
+    <span class="si">$(</span>MAKE<span class="si">)</span> <span class="nt">-C</span> src/lib/foo
+    <span class="si">$(</span>MAKE<span class="si">)</span> <span class="nt">-C</span> src/lib/bar
+    <span class="si">$(</span>MAKE<span class="si">)</span> <span class="nt">-C</span> src/lib/baz
 
-<span class="k">$(</span>deps_install<span class="k">)</span>: <span class="k">$(</span>pkg_lib_foo<span class="k">)</span> <span class="k">$(</span>pkg_lib_bar<span class="k">)</span> <span class="k">$(</span>pkg_lib_baz<span class="k">)</span>
-    @if <span class="o">[</span> <span class="s2">"</span><span class="k">$(</span>pkg_lib_foo<span class="k">)</span><span class="s2">"</span> <span class="o">=</span> <span class="s2">"</span><span class="k">$(</span>findstring <span class="k">$(</span>pkg_lib_foo<span class="k">)</span>,<span class="nv">$?</span><span class="k">)</span><span class="s2">"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span> <span class="se">\</span>
-        <span class="nb">cd</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/src/handlers/alpha <span class="o">&amp;&amp;</span> npm i <span class="k">$(</span>pkg_lib_foo<span class="k">)</span><span class="p">;</span> <span class="se">\</span>
+<span class="si">$(</span>deps_install<span class="si">)</span>: <span class="si">$(</span>pkg_lib_foo<span class="si">)</span> <span class="si">$(</span>pkg_lib_bar<span class="si">)</span> <span class="si">$(</span>pkg_lib_baz<span class="si">)</span>
+    @if <span class="o">[</span> <span class="s2">"</span><span class="si">$(</span>pkg_lib_foo<span class="si">)</span><span class="s2">"</span> <span class="o">=</span> <span class="s2">"</span><span class="si">$(</span>findstring <span class="si">$(</span>pkg_lib_foo<span class="si">)</span>,<span class="nv">$?</span><span class="si">)</span><span class="s2">"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span> <span class="se">\</span>
+        <span class="nb">cd</span> <span class="si">$(</span>CURDIR<span class="si">)</span>/src/handlers/alpha <span class="o">&amp;&amp;</span> npm i <span class="si">$(</span>pkg_lib_foo<span class="si">)</span><span class="p">;</span> <span class="se">\</span>
     <span class="k">fi</span>
-    @if <span class="o">[</span> <span class="s2">"</span><span class="k">$(</span>pkg_lib_bar<span class="k">)</span><span class="s2">"</span> <span class="o">=</span> <span class="s2">"</span><span class="k">$(</span>findstring <span class="k">$(</span>pkg_lib_bar<span class="k">)</span>,<span class="nv">$?</span><span class="k">)</span><span class="s2">"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span> <span class="se">\</span>
-        <span class="nb">cd</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/src/handlers/alpha <span class="o">&amp;&amp;</span> npm i <span class="k">$(</span>pkg_lib_bar<span class="k">)</span><span class="p">;</span> <span class="se">\</span>
-        <span class="nb">cd</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/src/handlers/omega <span class="o">&amp;&amp;</span> npm i <span class="k">$(</span>pkg_lib_bar<span class="k">)</span><span class="p">;</span> <span class="se">\</span>
+    @if <span class="o">[</span> <span class="s2">"</span><span class="si">$(</span>pkg_lib_bar<span class="si">)</span><span class="s2">"</span> <span class="o">=</span> <span class="s2">"</span><span class="si">$(</span>findstring <span class="si">$(</span>pkg_lib_bar<span class="si">)</span>,<span class="nv">$?</span><span class="si">)</span><span class="s2">"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span> <span class="se">\</span>
+        <span class="nb">cd</span> <span class="si">$(</span>CURDIR<span class="si">)</span>/src/handlers/alpha <span class="o">&amp;&amp;</span> npm i <span class="si">$(</span>pkg_lib_bar<span class="si">)</span><span class="p">;</span> <span class="se">\</span>
+        <span class="nb">cd</span> <span class="si">$(</span>CURDIR<span class="si">)</span>/src/handlers/omega <span class="o">&amp;&amp;</span> npm i <span class="si">$(</span>pkg_lib_bar<span class="si">)</span><span class="p">;</span> <span class="se">\</span>
     <span class="k">fi</span>
-    @if <span class="o">[</span> <span class="s2">"</span><span class="k">$(</span>pkg_lib_baz<span class="k">)</span><span class="s2">"</span> <span class="o">=</span> <span class="s2">"</span><span class="k">$(</span>findstring <span class="k">$(</span>pkg_lib_baz<span class="k">)</span>,<span class="nv">$?</span><span class="k">)</span><span class="s2">"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span> <span class="se">\</span>
-        <span class="nb">cd</span> <span class="k">$(</span>CURDIR<span class="k">)</span>/src/handlers/omega <span class="o">&amp;&amp;</span> npm i <span class="k">$(</span>pkg_lib_baz<span class="k">)</span><span class="p">;</span> <span class="se">\</span>
+    @if <span class="o">[</span> <span class="s2">"</span><span class="si">$(</span>pkg_lib_baz<span class="si">)</span><span class="s2">"</span> <span class="o">=</span> <span class="s2">"</span><span class="si">$(</span>findstring <span class="si">$(</span>pkg_lib_baz<span class="si">)</span>,<span class="nv">$?</span><span class="si">)</span><span class="s2">"</span> <span class="o">]</span><span class="p">;</span> <span class="k">then</span> <span class="se">\</span>
+        <span class="nb">cd</span> <span class="si">$(</span>CURDIR<span class="si">)</span>/src/handlers/omega <span class="o">&amp;&amp;</span> npm i <span class="si">$(</span>pkg_lib_baz<span class="si">)</span><span class="p">;</span> <span class="se">\</span>
     <span class="k">fi</span>
-    @touch <span class="k">$(</span>deps_install<span class="k">)</span>
+    @touch <span class="si">$(</span>deps_install<span class="si">)</span>
 
 </code></pre></div></div>
 

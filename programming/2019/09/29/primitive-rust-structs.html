@@ -283,7 +283,7 @@
 
 <p>We use the C representation by decorating our struct with the attribute <code class="highlighter-rouge">#[repr(C)]</code>:</p>
 
-<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">#</span><span class="p">[</span><span class="nf">repr</span><span class="p">(</span><span class="n">C</span><span class="p">)]</span>
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">#[repr(C)]</span>
 <span class="k">struct</span> <span class="n">Foo</span> <span class="p">{</span>
     <span class="n">first</span><span class="p">:</span> <span class="nb">u16</span><span class="p">,</span>
     <span class="n">second</span><span class="p">:</span> <span class="nb">u32</span><span class="p">,</span>
@@ -334,7 +334,7 @@
 
 <p>We can use <code class="highlighter-rouge">packed</code> to change to an alignment of 1 byte if we wish. We should remember that this could have negative consequences on the performance of your code since the CPU will potentially need to work harder to work with the data. Why would we want to do this if we know there are potential performance consequences? Well, we may need to conserve the memory if working in a memory-constrained system and we are fine with the memory/speed trade-off we are making. Or, we may be working with a disk format or a network protocol where the data alignment is critical to get correct.</p>
 
-<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">#</span><span class="p">[</span><span class="nf">repr</span><span class="p">(</span><span class="nf">packed</span><span class="p">(</span><span class="mi">1</span><span class="p">))]</span>
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">#[repr(packed(</span><span class="mi">1</span><span class="nd">))]</span>
 <span class="k">struct</span> <span class="n">Foo</span> <span class="p">{</span>
     <span class="n">first</span><span class="p">:</span> <span class="nb">u32</span><span class="p">,</span>
     <span class="n">second</span><span class="p">:</span> <span class="nb">u32</span><span class="p">,</span>
@@ -347,7 +347,7 @@
 
 <p>As mentioned above, we can also use <code class="highlighter-rouge">align</code> to increase the alignment as well:</p>
 
-<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">#</span><span class="p">[</span><span class="nf">repr</span><span class="p">(</span><span class="nf">align</span><span class="p">(</span><span class="mi">8</span><span class="p">))]</span>
+<div class="language-rust highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nd">#[repr(align(</span><span class="mi">8</span><span class="nd">))]</span>
 <span class="k">struct</span> <span class="n">Foo</span> <span class="p">{</span>
     <span class="n">first</span><span class="p">:</span> <span class="nb">u32</span><span class="p">,</span>
     <span class="n">second</span><span class="p">:</span> <span class="nb">u32</span><span class="p">,</span>
@@ -398,6 +398,14 @@
   </div>
   
   
+  <div class="col-4 sm-width-full left mt-3">
+    <a class="no-underline border-top-thin py-1 block" href="http://jolson88.com/programming/2019/10/07/tradeoffs-when-principles-conflict.html">
+      <span class="h5 bold text-accent">Next</span>
+      <p class="bold h3 link-primary mb-1">Finding tradeoffs when principles conflict</p>
+      <p>As I find myself home sick and exploring Rust features on [Compiler Explorer](https://godbolt.org/) in bed, I started thinking about the...</p>
+    </a>
+  </div>
+
 
 </div>
 
