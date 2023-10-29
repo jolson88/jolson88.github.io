@@ -258,6 +258,7 @@ a:link::-moz-selection {
 /* Sidenotes, margin notes, figures, captions */
 img {
     max-width: 100%;
+    border-radius: 4%;
 }
 
 .sidenote,
@@ -467,6 +468,6 @@ label.margin-toggle:not(.sidenote-number) {
 
     img {
         width: 100%;
-        border-radius: 3%;
+        border-radius: 4%;
     }
 }
