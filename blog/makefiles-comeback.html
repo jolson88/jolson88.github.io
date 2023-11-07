@@ -7,7 +7,15 @@
       name="description"
       content="Jason Olson's lifelong journey of code, music, art, and family"
     />
-    
+    <meta property="og:image" content="https://www.jolson88.com/img/blog/article.jpg" />
+<meta property="og:title" content="It's time for makefiles to make a comeback" />
+<meta property="og:description" content="Make and makefiles are lost in the past for many developers, its advantages lost in the stream of tools that are constantly reinventing the wheel of building software. It's time we get off that crazy carousel." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://www.jolson88.com/blog/makefiles-comeback.html" />
+<meta property="twitter:card" content="summary" />
+<meta property="twitter:title" content="It's time for makefiles to make a comeback" />
+<meta property="twitter:description" content="Make and makefiles are lost in the past for many developers, its advantages lost in the stream of tools that are constantly reinventing the wheel of building software. It's time we get off that crazy carousel." />
+<meta property="twitter:image" content="https://www.jolson88.com/img/blog/article.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
@@ -119,77 +127,6 @@
       <div><a href="/index.html">About</a></div>
     </nav>
     <article id="site-content" style="padding: 2rem 0rem"><h1>
-  <a href="blog/welcome.html">Welcome to my new blog</a>
-</h1>
-<section>
-  <p>
-    <span class="marginnote">Last Updated: October 28th, 2023</span>
-    All this time away from blogging. Much too long in fact. So why yet another "new blog"? For the
-    longest time, this blog used Jekyll and was hosted with Github Pages. So why the switch?
-  </p>
-  <p>
-    For the last 10-15+ years, I haven't been an active blogger. Blogging became more like an
-    occasional family holiday. It really started crawling along around the time I started having
-    kids. I would write infrequently enough that every time I came back to blog, I would have to
-    spend a bunch of time figuring out Ruby upgrades, Jekyll upgrades, dependencies that had been
-    deprecated, etc. It became simply too tiring for me. So the blog died.
-  </p>
-  <figure>
-    <img
-      src="/img/blog/i-cant-go-longer.jpg"
-      alt="An aging programmer ponders if they're really willing to keep on going."
-    />
-  </figure>
-  <p>
-    Recently, I've been on a kick of finally building my own tools and leaning-in to YAGNI (You
-    Ain't Gonna Need It). I'm approaching my personal life in a more agile way. I'm learning to do
-    what <em>I</em> am motivated to do instead of what I think <em>others want</em> me to do. I'm
-    learning to embrace a more scientific and logical mindset and learn by doing, not afraid to run
-    a "failed" experiment.
-  </p>
-  <p>So I started over. New project. Fresh slate. Blank `index.ts`. Deep breathe. Here we go.</p>
-  <p>
-    The only out-of-the-box piece I'm starting with is
-    <a href="https://edwardtufte.github.io/tufte-css/">TufteCSS</a>. Everything else is fresh from
-    my own index.ts file. I handcode the HTML for each post (I don't care, I'm a developer for
-    goodness sakes). This blog does not use a single external runtime dependency outside of
-    TufteCSS. It's just the code I need. No more, no less. A pure static, old-school website.
-  </p>
-  <p>
-    <span class="marginnote">
-      <img
-        src="/img/blog/forgotten-memories.jpg"
-        alt="A row of glass jars all collecting dust as if they haven't been used in years"
-      />
-      Sometimes it feels like the memories are long gone. Sometimes not. But I always wish I had the
-      solid memories that many of my colleagues over the years have had.
-    </span>
-    You see, I have a horrible memory. I know I'll forget this code. I know I'll need to be able to
-    get back up to speed with it quickly. As I'm making my own improvements, I need to know that I
-    haven't broken anything. My only guarantee is that I <em>will</em> forgot the details and
-    nuances of the code by the next time I work on it.
-  </p>
-  <p>
-    So the site generation is fully covered with automated tests. Yes, I wrote it with Test-Driven
-    Development. Not because it's some religious dogma I follow, but because it helps me with my own
-    anxiety and poor memory when working with code. Well, and "hacking my brain" with a
-    high-frequency positive feedback loop during development. I like my positive reinforcement!
-  </p>
-  <p>
-    There's going to be more to come here. It may not be super frequent at first. But I'm going to
-    do what I should have done a long time ago: listen to
-    <a href="https://www.hanselman.com/blog/dont-ever-break-a-url-if-you-can-help-it">
-      Scott Hanselman's wisdom
-    </a>
-    and control my own content and URLs. I can't go back now and change that. So here I am building
-    up my own brand at my own little corner of the ol' World Wide Web.
-  </p>
-  <p>
-    Like olden times. Each one of my keystrokes in a location I control. Keystrokes preserved and
-    with a lifetime that is not tied to the lifetime of social media companies.
-  </p>
-</section>
-<h1>
   <a href="blog/makefiles-comeback.html">It's time for makefiles to make a comeback</a>
 </h1>
 <section>
@@ -441,89 +378,21 @@ $(deps_install): $(pkg_lib_foo) $(pkg_lib_bar) $(pkg_lib_baz)
   <p>
     Yes, it's time for Makefiles to make a comeback! Let's do this!
   </p>
-</section>
-<h1>
-  <a href="blog/want-to-be-a-craftsman.html">I want to be a craftsman</a>
-</h1>
-<section>
-  <figure>
-    <img
-      src="/img/blog/craftsman.jpg"
-      alt="A craftsman woodworker sits in front of his workbench working on an early model personal computer."
-    />
-  </figure>
-  <p>
-    <span class="marginnote">Last Updated: November 8th, 2015</span>
-    Developers have long discussed and debated whether programming is an art, a science, an engineering practice, or 
-    something else. I don’t believe in Blacks and Whites. I think programming means different things to different people.
-    And programming fulfills different expectations depending on its use.
-  </p>
-  <p>
-    Over the last ten years, I’ve taken quite the winding road as a developer. Before joining Microsoft, I was a back-end
-    server developer using C#. I loved writing code. I loved learning how to write better code. I loved reading well written
-    code. I loved Design Patterns, and Enterprise Application Architecture, and Test-Driven Development, and all the fancy
-    buzzwords at the time. I blogged about these loves. I gave talks about these loves. Then several years later, I got a call that
-    started the next phase of my career.
-  </p>
-  <p>
-    Almost on a whim, I joined Microsoft after a recruiter contacted me about an open position. It was like being called up to
-    the Big Leagues for me, finally called home to the Mothership. I joined Microsoft as a Technical Evangelist. I blogged and
-    shared other people’s technologies. I was talking about the problems other people were having. I later joined Windows as a
-    Program Manager. I worked to deliver technologies like the Windows Runtime and cool new video editing APIs. But over time,
-    I just found myself less excited. I was at Microsoft for over nine years. Towards the end, I knew it was time for me to
-    move on.
-  </p>
-  <p>
-    I felt like I was rapidly losing touch with the development world I once held so dear. I saw many of the cool technologies
-    my friends were working with and I found myself wanting to be in their shoes. i had lost my passion. I had lost my fire.
-    That feeling of excitement about going to work in the morning? I missed that feeling.
-  </p>
-</section>
-<h2>Getting back to my roots</h2>
-<section>
-  <p>
-    So I started interviewing at different companies. I found a couple that I was extremely excited about and absolutely loved
-    the technologies they were using. Through the interview process, I fell in love with my current company and team at Concur.
-    They have a great culture, a great group of individuals, and a great set of technologies that are sharpening my tools again
-    (and hey, we’re hiring!). I had thought about interviewing at Concur ever since Howard Dierking started talking about the
-    work he was doing here. However, I let fear prevent me from taking the leap. “I don’t want to be rejected”. “I’m comfortable
-    here at Microsoft”. “I couldn’t possibly find a job as good as this”. “I should be happy here, I’m lucky”. All the usual
-    suspects. I finally did take the leap though, and I couldn’t be happier with my decision.
-  </p>
-  <p>
-    Do I regret my time at Microsoft? Not at all. I enjoyed most of my time there. I worked with many great people (too many
-    people to list here). I learned a lot from the many managers and coworkers I had over the years. I had many great
-    experiences like talking at the //build conference and seeing how large-scale software is made and shipped. Now that I’m
-    getting my dev legs back under me, I feel like everything I learned during my time at Microsoft has made me a better
-    developer. Being a Program Manager taught me to think critically about technology and to focus on the things that actually
-    provide value. The many different projects gave me a well-rounded software education which I will always be thankful for.
-  </p>
-</section>
-<h2>Being A Craftsman</h2>
-<section>
-  <p>
-    Here’s the thing though… I want to be a Craftsman. I need to be creating. I need to be getting my hands
-    dirty. I’m inspired by documentaries like <a href="https://www.magpictures.com/jirodreamsofsushi/">Jiro Dreams of Sushi</a>,
-    <a href="https://www.youtube.com/watch?v=7708E1bmoxc">Building Without Nails</a>,
-    <a href="https://designisonefilm.com/">Design Is One</a>,
-    and Helvetica. I’m inspired by developers that use Vim or Emacs and can craft their own customized development
-    environment; I love Tim Ewald’s talk on Clojure: <a href="https://www.youtube.com/watch?v=ShEez0JkOFw">Programming with Hand Tools.</a>
-    I love “craftsman” programming languages like LISP/Scheme, Clojure, Smalltalk, Self, etc. The things people do with
-    creative coding frameworks like Processing, or Cinder, or Open Frameworks absolute amaze me. <a href="https://gmunk.com/">gmunk’s</a>
-    work on the interfaces in the movie Oblivion? Jaw-dropping (bonus: I discovered he did the graphics for my favorite
-    desktop wallpaper in Windows 10!).
-  </p>
-  <p>
-    I want to touch other people’s lives. I want to share my love for writing code again. I want to be a Code
-    Craftsman other people look up to. For others that want to be hackers, or engineers, or scientists, that’s cool.
-    But it’s not me.
-  </p>
-  <p>
-    One thing is for sure: it’s <em>great</em> to be back! It’s great to have started the next phase of my career.
-    And I can’t wait to see the stuff I’ll be a part of in the years to come.
-  </p>
 </section></article>
     <footer id="site-footer">&copy;2023, Jason Olson</footer>
     <script>hljs.highlightAll();</script>
   </body>
-</html>
+</html><div id="disqus_thread"></div>
+<script>
+    var disqus_config = function () {
+      this.page.url = 'https://www.jolson88.com/blog/makefiles-comeback.html';
+      this.page.identifier = 'https://www.jolson88.com/blog/makefiles-comeback.html';
+    };
+    (function() { // DON'T EDIT BELOW THIS LINE
+    var d = document, s = d.createElement('script');
+    s.src = 'https://jolson88.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+    })();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
