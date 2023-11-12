@@ -119,6 +119,93 @@
       <div><a href="/index.html">About</a></div>
     </nav>
     <article id="site-content" style="padding: 2rem 0rem"><h1>
+  <a href="blog/isolate-for-lack-of-change.html">Isolating For Lack of Change Versus Complexity</a>
+</h1>
+<section>
+  <figure>
+    <img
+      src="/img/blog/working-with-vintage.jpg"
+      alt="A geek that loves classic and vintage computers is working at their workbench dissecting the existing personal computer they are restoring. They are surrounded by shelves of running computers that they've previously restored."
+    />
+  </figure>
+  <p>
+    <span class="marginnote">Last Updated: November 12th, 2023</span>
+    <em>
+      NOTE: This is one of many different lenses through which to look at software design.
+      This article outlines some thoughts I've been throwing around in my noggin' as I experiment with different
+      approaches and reasons to split software elements out from each other as a piece of software
+      grows. These thoughts were formulated working on above-average-to-small code bases. The applicability
+      of the discussion will vary on the size of the problem space and granularity level you are working
+      at. It is not meant to apply to the extremely large areas, the Googles, the Microsofts, the Amazons.
+    </em>
+  </p>
+  <p>
+    I think we may get something wrong as engineers. How many times do we isolate sources of
+    complexity off into their own corners? Their own functions, their own classes, their own
+    microservices. "Oh, this is going to be changing a lot, split it off into its own thing so it
+    can change without impacting other systems". This feels natural and intuitive. But I'm not
+    sure it's the logical choice.
+  </p>
+  <p>
+    I personally find that I don't want to isolate my complexity any more. An important skill in
+    writing software is managing complexity. The more features that are added to a piece of software,
+    the more complex it naturally becomes. If you don't keep this complexity in check, you can find it
+    becomes more expensive to add features to your software as time passes.
+  </p>
+  <p>
+    So I try not to isolate my complexity. I have found that I like to see my complexity up front
+    and center in my code. For the areas of my code that are a bit intertwined or need to change rapidly,
+    I want to have all that code close at hand to me and easy and quick to change.
+  </p>
+</section>
+<section>
+  <h2>Optimizing for Change</h2>
+  <p>
+    It is cheaper to change things that are grouped locally together. It's much simpler to change the
+    structure of a couple variables within a single function than change the structure of several
+    domain objects returned from different API endpoints across several different API services.
+  </p>
+  <p>
+    Don't get me wrong. I don't believe microservices are inherently a Bad Thing. I have just come to feel
+    that it's best to leverage them to "spin off" cohesive elements of your software whose requirements have
+    stopped evolving and whose rate of change has settled down. As this code has shown it needs to change
+    much less frequently, we can spin it off so it can just plug away doing it's job. For us, it can be
+    out-of-sight, out-of-mind as we continue to ship feature after feature in our software.
+  </p>
+  <p>
+    This in turn reduces the concepts that developers need to keep in their mind when working in the core of
+    the code that changes. By reducing the total critical mass of the changing code, the code can become
+    easier to change as well as there is less stuff for all your software elements to collide against or
+    be interfered with.
+  </p>
+</section>
+<section>
+  <figure>
+    <img
+      src="/img/blog/fractal-colorful.jpg"
+      alt="A colorful fractal that is reflected above a digital floor with lines of colors on an uneven grid."
+    />
+  </figure>
+  <p>
+    <span class="newthought">As software design is fractal</span>, this same concept applies in the small as well. Modules, down to Functions, are 
+    great for isolating out the cohesive elements of your code as their change rate "cools down" and the code
+    starts to need to change less often.
+  </p>
+  <p>
+    At different times during the life of a piece of software, the same piece of code may rotate in and out of
+    the "hot spot" of change. It might become dormant for a while and solidify itself off into a corner. You
+    might then get new features coming in that require that element to start changing again. So you might inline
+    the code again, allowing it to change structure and evolve to accept the new features into the software.
+  </p>
+  <p>
+    Give it a try! You can practice at nearly any level you are working on. Try to get a feel for how your ability
+    to change code changes based on different software designs when you isolate complexity versus isolate cooled code.
+    If you are interested in learning more about how you might better experiment in the small, Kent Beck's latest
+    book <a href="https://learning.oreilly.com/library/view/tidy-first/9781098151232/">Tidy First?</a> is a great
+    read as usual. Kent Beck hit it out of the park again!
+  </p>
+</section>
+<h1>
   <a href="blog/welcome.html">Welcome to my new blog</a>
 </h1>
 <section>
